@@ -27,53 +27,14 @@ import SkillInput from "@/components/skill-input";
 import ProjectInput from "@/components/project-input";
 import ConfirmationDialog from "@/components/confirmation-dialog";
 import { Card, CardContent } from "@/components/ui/card";
-import { z } from "zod";
-
-export const applicationFormSchema = z.object({
-  firstName: z.string().nonempty("First name is required"),
-  lastName: z.string().nonempty("Last name is required"),
-  email: z.string().email("Invalid email address"),
-  phone: z.string().nonempty("Phone number is required"),
-  address: z.string().nonempty("Address is required"),
-  city: z.string().nonempty("City is required"),
-  state: z.string().nonempty("State is required"),
-  zipCode: z.string().nonempty("Zip code is required"),
-  country: z.string().nonempty("Country is required"),
-  education: z.object({
-    highestLevel: z.string(),
-    institution: z.string(),
-    fieldOfStudy: z.string(),
-    graduationYear: z.string(),
-  }),
-  experience: z.object({
-    totalYears: z.string(),
-    currentTitle: z.string(),
-    currentCompany: z.string(),
-    achievements: z.string(),
-  }),
-  skills: z.array(z.string()),
-  otherSkills: z.string(),
-  projects: z.array(
-    z.object({
-      title: z.string(),
-      description: z.string(),
-      technologies: z.string(),
-    })
-  ),
-  coverLetter: z.string(),
-  portfolioWebsite: z.string().optional(),
-  linkedIn: z.string().optional(),
-  github: z.string().optional(),
-  hasResume: z.boolean(),
-  agreeToTerms: z.boolean(),
-});
+import { applicationFormSchema, type ApplicationFormValues } from "@/lib/schema";
 
 interface JobApplicationFormProps {
   jobId: string;
   jobTitle: string;
 }
 
-const educationLevels = [
+const educationLevels: ("High School" | "Associate's Degree" | "Bachelor's Degree" | "Master's Degree" | "Doctorate" | "Other")[] = [
   "High School",
   "Associate's Degree",
   "Bachelor's Degree",
@@ -81,7 +42,7 @@ const educationLevels = [
   "Doctorate",
 ];
 
-const experienceLevels = [
+const experienceLevels: ("0-1 years" | "1-3 years" | "3-5 years" | "5-10 years" | "10+ years")[] = [
   "0-1 years",
   "1-3 years",
   "3-5 years",
@@ -97,8 +58,6 @@ const JobApplicationForm: React.FC<JobApplicationFormProps> = ({
   const [resumeFile, setResumeFile] = useState<File | null>(null);
   const [confirmationOpen, setConfirmationOpen] = useState(false);
   const [applicationId, setApplicationId] = useState("");
-
-  type ApplicationFormValues = z.infer<typeof applicationFormSchema>;
   
   const form = useForm<ApplicationFormValues>({
     resolver: zodResolver(applicationFormSchema),
@@ -135,35 +94,35 @@ const JobApplicationForm: React.FC<JobApplicationFormProps> = ({
       agreeToTerms: false,
     },
   });
-
+  
   async function onSubmit(values: ApplicationFormValues) {
     try {
       setIsSubmitting(true);
+      console.log('Sending values:', values);
 
-      // Mock form submission for static site
-      // In a real app, this would be an API call to a serverless function
-      console.log("Application data:", values);
-      console.log("Resume file:", resumeFile ? `${resumeFile.name} (${resumeFile.size} bytes)` : "None");
+      const response = await fetch("/api/applications", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(values),
+      });
 
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      const result = await response.json();
 
-      // Create mock application ID
-      const mockApplicationId = `APP-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+      if (!response.ok) {
+        console.error('Server error:', result);
+        throw new Error(result.message || "Failed to submit application");
+      }
 
-      // Show success dialog
-      setApplicationId(mockApplicationId);
+      setApplicationId(result.applicationId);
       setConfirmationOpen(true);
-
-      // Reset form
       form.reset();
       setResumeFile(null);
-
-      // Show success toast
       toast.success("Application submitted successfully!");
     } catch (error) {
-      console.error("Error submitting application:", error);
-      toast.error("Failed to submit application. Please try again.");
+      console.error('Submission error:', error);
+      toast.error(error instanceof Error ? error.message : "Failed to submit application. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -500,7 +459,7 @@ const JobApplicationForm: React.FC<JobApplicationFormProps> = ({
                     <FormItem>
                       <FormControl>
                         <ProjectInput
-                          projects={field.value}
+                          projects={field.value || []}
                           setProjects={field.onChange}
                         />
                       </FormControl>
