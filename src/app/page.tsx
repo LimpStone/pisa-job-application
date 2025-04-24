@@ -11,7 +11,7 @@ const mockJobs = [
     id: "job-001",
     title: "Senior Software Engineer",
     department: "Engineering",
-    location: "New York, NY (Remote Available)",
+    location: "GDL, JAL (Remote Available)",
     type: "Full-time",
     posted: "2 days ago",
   }
