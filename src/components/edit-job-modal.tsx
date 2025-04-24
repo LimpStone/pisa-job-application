@@ -1,0 +1,165 @@
+"use client"
+
+import type React from "react"
+
+import { useState } from "react"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+
+interface Job {
+  id: number
+  title: string
+  company: string
+  department: string
+  location: string
+  postedDate: string
+  applicants: number
+  type: string
+  level: string
+  description?: string
+}
+
+interface EditJobModalProps {
+  job: Job | null
+  isOpen: boolean
+  onClose: () => void
+  onSave: (job: Job) => void
+  onDelete: (jobId: number) => void
+}
+
+export function EditJobModal({ job, isOpen, onClose, onSave, onDelete }: EditJobModalProps) {
+  const [jobData, setJobData] = useState<Job | null>(job)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+
+  // Update local state when job prop changes
+  if (job && (!jobData || job.id !== jobData.id)) {
+    setJobData(job)
+  }
+
+  if (!jobData) return null
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target
+    setJobData((prev) => (prev ? { ...prev, [name]: value } : null))
+  }
+
+  const handleSave = () => {
+    if (jobData) {
+      onSave(jobData)
+    }
+    onClose()
+  }
+
+  const handleDelete = () => {
+    setDeleteDialogOpen(false)
+    if (jobData) {
+      onDelete(jobData.id)
+    }
+    onClose()
+  }
+
+  return (
+    <>
+      <Dialog open={isOpen} onOpenChange={onClose}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>Edit Job Posting</DialogTitle>
+            <DialogDescription>Make changes to the job posting here. Click save when you're done.</DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="title">Job Title</Label>
+                <Input id="title" name="title" value={jobData.title} onChange={handleChange} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="department">Department</Label>
+                <Input id="department" name="department" value={jobData.department} onChange={handleChange} />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="company">Company</Label>
+                <Input id="company" name="company" value={jobData.company} onChange={handleChange} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="location">Location</Label>
+                <Input id="location" name="location" value={jobData.location} onChange={handleChange} />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="type">Job Type</Label>
+                <Input id="type" name="type" value={jobData.type} onChange={handleChange} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="level">Level</Label>
+                <Input id="level" name="level" value={jobData.level} onChange={handleChange} />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="description">Job Description</Label>
+              <Textarea
+                id="description"
+                name="description"
+                value={jobData.description || ""}
+                onChange={handleChange}
+                rows={5}
+              />
+            </div>
+          </div>
+          <DialogFooter className="flex justify-between">
+            <Button variant="destructive" onClick={() => setDeleteDialogOpen(true)} type="button">
+              Delete Job
+            </Button>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={onClose} type="button">
+                Cancel
+              </Button>
+              <Button onClick={handleSave} type="button">
+                Save Changes
+              </Button>
+            </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the job posting and remove it from our servers.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
+  )
+}
