@@ -1,20 +1,27 @@
 "use client"
+
 import type React from "react"
+
 import { useState } from "react"
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
+import { ScrollArea } from "@/components/ui/scroll-area"
 
 export function CreateJobPanel() {
   const [jobData, setJobData] = useState({
     title: "",
     company: "",
+    department: "",
     location: "",
+    type: "",
+    level: "",
+    salary: "",
     description: "",
     requirements: "",
-    salary: "",
+    responsibilities: "",
   })
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -33,10 +40,14 @@ export function CreateJobPanel() {
     setJobData({
       title: "",
       company: "",
+      department: "",
       location: "",
+      type: "",
+      level: "",
+      salary: "",
       description: "",
       requirements: "",
-      salary: "",
+      responsibilities: "",
     })
   }
 
@@ -46,86 +57,136 @@ export function CreateJobPanel() {
         <CardTitle>Create New Job</CardTitle>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="title">Job Title</Label>
-            <Input
-              id="title"
-              name="title"
-              value={jobData.title}
-              onChange={handleChange}
-              placeholder="e.g. Frontend Developer"
-              required
-            />
-          </div>
+        <ScrollArea className="h-[calc(100vh-250px)] pr-4">
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="title">Job Title</Label>
+              <Input
+                id="title"
+                name="title"
+                value={jobData.title}
+                onChange={handleChange}
+                placeholder="e.g. Frontend Developer"
+                required
+              />
+            </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="company">Company</Label>
-            <Input
-              id="company"
-              name="company"
-              value={jobData.company}
-              onChange={handleChange}
-              placeholder="e.g. Tech Solutions Inc."
-              required
-            />
-          </div>
+            <div className="space-y-2">
+              <Label htmlFor="company">Company</Label>
+              <Input
+                id="company"
+                name="company"
+                value={jobData.company}
+                onChange={handleChange}
+                placeholder="e.g. Tech Solutions Inc."
+                required
+              />
+            </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="location">Location</Label>
-            <Input
-              id="location"
-              name="location"
-              value={jobData.location}
-              onChange={handleChange}
-              placeholder="e.g. Remote, New York, NY"
-              required
-            />
-          </div>
+            <div className="space-y-2">
+              <Label htmlFor="department">Department</Label>
+              <Input
+                id="department"
+                name="department"
+                value={jobData.department}
+                onChange={handleChange}
+                placeholder="e.g. Engineering"
+                required
+              />
+            </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="salary">Salary Range</Label>
-            <Input
-              id="salary"
-              name="salary"
-              value={jobData.salary}
-              onChange={handleChange}
-              placeholder="e.g. $80,000 - $100,000"
-            />
-          </div>
+            <div className="space-y-2">
+              <Label htmlFor="location">Location</Label>
+              <Input
+                id="location"
+                name="location"
+                value={jobData.location}
+                onChange={handleChange}
+                placeholder="e.g. Remote, New York, NY"
+                required
+              />
+            </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="description">Job Description</Label>
-            <Textarea
-              id="description"
-              name="description"
-              value={jobData.description}
-              onChange={handleChange}
-              placeholder="Enter job description..."
-              rows={3}
-              required
-            />
-          </div>
+            <div className="space-y-2">
+              <Label htmlFor="type">Job Type</Label>
+              <Input
+                id="type"
+                name="type"
+                value={jobData.type}
+                onChange={handleChange}
+                placeholder="e.g. Full-time, Part-time, Contract"
+                required
+              />
+            </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="requirements">Requirements</Label>
-            <Textarea
-              id="requirements"
-              name="requirements"
-              value={jobData.requirements}
-              onChange={handleChange}
-              placeholder="Enter job requirements..."
-              rows={3}
-              required
-            />
-          </div>
-        </form>
+            <div className="space-y-2">
+              <Label htmlFor="level">Level</Label>
+              <Input
+                id="level"
+                name="level"
+                value={jobData.level}
+                onChange={handleChange}
+                placeholder="e.g. Junior, Mid-level, Senior"
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="salary">Salary Range</Label>
+              <Input
+                id="salary"
+                name="salary"
+                value={jobData.salary}
+                onChange={handleChange}
+                placeholder="e.g. $80,000 - $100,000"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="description">Job Description</Label>
+              <Textarea
+                id="description"
+                name="description"
+                value={jobData.description}
+                onChange={handleChange}
+                placeholder="Enter job description..."
+                rows={3}
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="requirements">Requirements</Label>
+              <Textarea
+                id="requirements"
+                name="requirements"
+                value={jobData.requirements}
+                onChange={handleChange}
+                placeholder="Enter job requirements..."
+                rows={3}
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="responsibilities">Responsibilities</Label>
+              <Textarea
+                id="responsibilities"
+                name="responsibilities"
+                value={jobData.responsibilities}
+                onChange={handleChange}
+                placeholder="Enter job responsibilities..."
+                rows={3}
+                required
+              />
+            </div>
+
+            <Button type="submit" className="w-full">
+              Create Job
+            </Button>
+          </form>
+        </ScrollArea>
       </CardContent>
-      <CardFooter>
-        <Button onClick={handleSubmit} className="w-full">
-          Create Job
-        </Button>
-      </CardFooter>
     </Card>
   )
 }

@@ -36,7 +36,10 @@ interface Job {
   applicants: number
   type: string
   level: string
-  description?: string
+  salary: string
+  description: string
+  requirements: string
+  responsibilities: string
 }
 
 interface EditJobModalProps {
@@ -81,7 +84,7 @@ export function EditJobModal({ job, isOpen, onClose, onSave, onDelete }: EditJob
   return (
     <>
       <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="sm:max-w-[600px]">
+        <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Edit Job Posting</DialogTitle>
             <DialogDescription>Make changes to the job posting here. Click save when you're done.</DialogDescription>
@@ -107,7 +110,7 @@ export function EditJobModal({ job, isOpen, onClose, onSave, onDelete }: EditJob
                 <Input id="location" name="location" value={jobData.location} onChange={handleChange} />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-3 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="type">Job Type</Label>
                 <Input id="type" name="type" value={jobData.type} onChange={handleChange} />
@@ -116,15 +119,39 @@ export function EditJobModal({ job, isOpen, onClose, onSave, onDelete }: EditJob
                 <Label htmlFor="level">Level</Label>
                 <Input id="level" name="level" value={jobData.level} onChange={handleChange} />
               </div>
+              <div className="space-y-2">
+                <Label htmlFor="salary">Salary Range</Label>
+                <Input id="salary" name="salary" value={jobData.salary} onChange={handleChange} />
+              </div>
             </div>
             <div className="space-y-2">
               <Label htmlFor="description">Job Description</Label>
               <Textarea
                 id="description"
                 name="description"
-                value={jobData.description || ""}
+                value={jobData.description}
                 onChange={handleChange}
-                rows={5}
+                rows={4}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="requirements">Requirements</Label>
+              <Textarea
+                id="requirements"
+                name="requirements"
+                value={jobData.requirements}
+                onChange={handleChange}
+                rows={4}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="responsibilities">Responsibilities</Label>
+              <Textarea
+                id="responsibilities"
+                name="responsibilities"
+                value={jobData.responsibilities}
+                onChange={handleChange}
+                rows={4}
               />
             </div>
           </div>
