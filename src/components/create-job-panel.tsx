@@ -9,8 +9,13 @@ import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import { createJob } from "@/app/actions/job-actions"
+import { useToast } from "@/hooks/use-toast"
+import { Loader2 } from "lucide-react"
 
 export function CreateJobPanel() {
+  const { toast } = useToast()
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const [jobData, setJobData] = useState({
     title: "",
     company: "",
@@ -32,23 +37,56 @@ export function CreateJobPanel() {
     }))
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    // Implement job creation logic here
-    console.log("Creating new job:", jobData)
-    // Reset form after submission
-    setJobData({
-      title: "",
-      company: "",
-      department: "",
-      location: "",
-      type: "",
-      level: "",
-      salary: "",
-      description: "",
-      requirements: "",
-      responsibilities: "",
-    })
+    setIsSubmitting(true)
+
+    try {
+      // Create FormData from the form
+      const formData = new FormData()
+      Object.entries(jobData).forEach(([key, value]) => {
+        formData.append(key, value)
+      })
+
+      // Call the server action
+      const result = await createJob(formData)
+
+      if (result.success) {
+        toast({
+          title: "Success",
+          description: result.message,
+        })
+
+        // Reset form after successful submission
+        setJobData({
+          title: "",
+          company: "",
+          department: "",
+          location: "",
+          type: "",
+          level: "",
+          salary: "",
+          description: "",
+          requirements: "",
+          responsibilities: "",
+        })
+      } else {
+        toast({
+          title: "Error",
+          description: result.message,
+          variant: "destructive",
+        })
+      }
+    } catch (error) {
+      console.error("Error submitting job:", error)
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -60,7 +98,7 @@ export function CreateJobPanel() {
         <ScrollArea className="h-[calc(100vh-250px)] pr-4">
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="title">Job Title</Label>
+              <Label htmlFor="title">Job Title *</Label>
               <Input
                 id="title"
                 name="title"
@@ -72,7 +110,7 @@ export function CreateJobPanel() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="company">Company</Label>
+              <Label htmlFor="company">Company *</Label>
               <Input
                 id="company"
                 name="company"
@@ -84,7 +122,7 @@ export function CreateJobPanel() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="department">Department</Label>
+              <Label htmlFor="department">Department *</Label>
               <Input
                 id="department"
                 name="department"
@@ -96,7 +134,7 @@ export function CreateJobPanel() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="location">Location</Label>
+              <Label htmlFor="location">Location *</Label>
               <Input
                 id="location"
                 name="location"
@@ -108,7 +146,7 @@ export function CreateJobPanel() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="type">Job Type</Label>
+              <Label htmlFor="type">Job Type *</Label>
               <Input
                 id="type"
                 name="type"
@@ -120,7 +158,7 @@ export function CreateJobPanel() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="level">Level</Label>
+              <Label htmlFor="level">Level *</Label>
               <Input
                 id="level"
                 name="level"
@@ -143,7 +181,7 @@ export function CreateJobPanel() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="description">Job Description</Label>
+              <Label htmlFor="description">Job Description *</Label>
               <Textarea
                 id="description"
                 name="description"
@@ -156,7 +194,7 @@ export function CreateJobPanel() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="requirements">Requirements</Label>
+              <Label htmlFor="requirements">Requirements *</Label>
               <Textarea
                 id="requirements"
                 name="requirements"
@@ -169,7 +207,7 @@ export function CreateJobPanel() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="responsibilities">Responsibilities</Label>
+              <Label htmlFor="responsibilities">Responsibilities *</Label>
               <Textarea
                 id="responsibilities"
                 name="responsibilities"
@@ -181,8 +219,15 @@ export function CreateJobPanel() {
               />
             </div>
 
-            <Button type="submit" className="w-full">
-              Create Job
+            <Button type="submit" className="w-full" disabled={isSubmitting}>
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Creating...
+                </>
+              ) : (
+                "Create Job"
+              )}
             </Button>
           </form>
         </ScrollArea>

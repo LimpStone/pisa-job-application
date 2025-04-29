@@ -12,6 +12,24 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+model Job {
+  id               Int      @id @default(autoincrement())
+  title            String
+  company          String
+  department       String
+  location         String
+  type             String
+  level            String
+  salary           String?
+  description      String
+  requirements     String
+  responsibilities String
+  postedDate       DateTime @default(now())
+  applicants       Int      @default(0)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  applications     Application[]
+}
 
 model Application {
   id              Int       @id @default(autoincrement())
@@ -35,6 +53,8 @@ model Application {
   experience      Experience[]
   skills          Skill[]
   projects        Project[]
+  jobId           Int
+  job             Job       @relation(fields: [jobId], references: [id])
 }
 
 model Education {

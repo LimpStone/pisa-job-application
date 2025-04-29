@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import {
   Dialog,
   DialogContent,
@@ -25,6 +25,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import { Loader2 } from "lucide-react"
 
 interface Job {
   id: number
@@ -32,11 +33,11 @@ interface Job {
   company: string
   department: string
   location: string
-  postedDate: string
+  postedDate: Date
   applicants: number
   type: string
   level: string
-  salary: string
+  salary: string | null
   description: string
   requirements: string
   responsibilities: string
@@ -53,11 +54,15 @@ interface EditJobModalProps {
 export function EditJobModal({ job, isOpen, onClose, onSave, onDelete }: EditJobModalProps) {
   const [jobData, setJobData] = useState<Job | null>(job)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   // Update local state when job prop changes
-  if (job && (!jobData || job.id !== jobData.id)) {
-    setJobData(job)
-  }
+  useEffect(() => {
+    if (job && (!jobData || job.id !== jobData.id)) {
+      setJobData(job)
+    }
+  }, [job, jobData])
 
   if (!jobData) return null
 
@@ -66,19 +71,34 @@ export function EditJobModal({ job, isOpen, onClose, onSave, onDelete }: EditJob
     setJobData((prev) => (prev ? { ...prev, [name]: value } : null))
   }
 
-  const handleSave = () => {
-    if (jobData) {
-      onSave(jobData)
+  const handleSave = async () => {
+    if (!jobData) return
+
+    setIsSubmitting(true)
+    try {
+      await onSave(jobData)
+      onClose()
+    } catch (error) {
+      console.error("Error saving job:", error)
+    } finally {
+      setIsSubmitting(false)
     }
-    onClose()
   }
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     setDeleteDialogOpen(false)
-    if (jobData) {
-      onDelete(jobData.id)
+
+    if (!jobData) return
+
+    setIsDeleting(true)
+    try {
+      await onDelete(jobData.id)
+      onClose()
+    } catch (error) {
+      console.error("Error deleting job:", error)
+    } finally {
+      setIsDeleting(false)
     }
-    onClose()
   }
 
   return (
@@ -121,7 +141,7 @@ export function EditJobModal({ job, isOpen, onClose, onSave, onDelete }: EditJob
               </div>
               <div className="space-y-2">
                 <Label htmlFor="salary">Salary Range</Label>
-                <Input id="salary" name="salary" value={jobData.salary} onChange={handleChange} />
+                <Input id="salary" name="salary" value={jobData.salary || ""} onChange={handleChange} />
               </div>
             </div>
             <div className="space-y-2">
@@ -156,15 +176,34 @@ export function EditJobModal({ job, isOpen, onClose, onSave, onDelete }: EditJob
             </div>
           </div>
           <DialogFooter className="flex justify-between">
-            <Button variant="destructive" onClick={() => setDeleteDialogOpen(true)} type="button">
-              Delete Job
+            <Button
+              variant="destructive"
+              onClick={() => setDeleteDialogOpen(true)}
+              type="button"
+              disabled={isSubmitting || isDeleting}
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                "Delete Job"
+              )}
             </Button>
             <div className="flex gap-2">
-              <Button variant="outline" onClick={onClose} type="button">
+              <Button variant="outline" onClick={onClose} type="button" disabled={isSubmitting || isDeleting}>
                 Cancel
               </Button>
-              <Button onClick={handleSave} type="button">
-                Save Changes
+              <Button onClick={handleSave} type="button" disabled={isSubmitting || isDeleting}>
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  "Save Changes"
+                )}
               </Button>
             </div>
           </DialogFooter>
