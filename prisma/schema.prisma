@@ -49,17 +49,18 @@ model Application {
   hasResume       Boolean
   agreeToTerms    Boolean
   createdAt       DateTime  @default(now())
+  score           Int       @default(0)
   education       Education[]
   experience      Experience[]
   skills          Skill[]
   projects        Project[]
   jobId           Int
-  job             Job       @relation(fields: [jobId], references: [id])
+  job             Job       @relation(fields: [jobId], references: [id],onDelete: Cascade)
 }
 
 model Education {
   id              Int         @id @default(autoincrement())
-  application     Application @relation(fields: [applicationId], references: [id])
+  application     Application @relation(fields: [applicationId], references: [id],onDelete: Cascade)
   applicationId   Int
   highestLevel    String
   institution     String
@@ -69,7 +70,7 @@ model Education {
 
 model Experience {
   id              Int         @id @default(autoincrement())
-  application     Application @relation(fields: [applicationId], references: [id])
+  application     Application @relation(fields: [applicationId], references: [id],onDelete: Cascade)
   applicationId   Int
   totalYears      String
   currentTitle    String?
@@ -79,14 +80,14 @@ model Experience {
 
 model Skill {
   id              Int         @id @default(autoincrement())
-  application     Application @relation(fields: [applicationId], references: [id])
+  application     Application @relation(fields: [applicationId], references: [id],onDelete: Cascade)
   applicationId   Int
   skill           String
 }
 
 model Project {
   id              Int         @id @default(autoincrement())
-  application     Application @relation(fields: [applicationId], references: [id])
+  application     Application @relation(fields: [applicationId], references: [id],onDelete: Cascade)
   applicationId   Int
   title           String
   description     String

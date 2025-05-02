@@ -1,63 +1,64 @@
-import React from "react";
-import { Metadata } from "next";
-import Header from "@/components/ui/header";
-import Footer from "@/components/ui/footer";
-import JobApplicationForm from "@/components/job-application-form";
-import JobDetail from "@/components/job-detail";
+import type { Metadata } from "next"
+import Header from "@/components/ui/header"
+import Footer from "@/components/ui/footer"
+import JobApplicationForm from "@/components/job-application-form"
+import JobDetail from "@/components/job-detail"
+import { getJobById, getAllJobIds } from "@/app/actions/public-job-actions"
+import { notFound } from "next/navigation"
 
 export const metadata: Metadata = {
   title: "Pisa | Apply for Job",
   description: "Apply for a job at Pisa",
-};
-
-// Mock data for job details - in a real app, this would come from a backend API
-const getMockJobDetails = (jobId: string) => {
-  return {
-    id: jobId,
-    title: "Senior Software Engineer",
-    location: "New York, NY (Remote Available)",
-    department: "Engineering",
-    description: "Pisa is looking for experienced software engineers to join our growing team. In this role, you will work on developing scalable solutions, collaborating with cross-functional teams, and implementing best practices to ensure code quality and performance.",
-    requirements: [
-      "5+ years of experience with modern JavaScript frameworks (React, Vue, Angular)",
-      "Strong understanding of backend technologies (Node.js, Python, Java)",
-      "Experience with cloud services (AWS, GCP, Azure)",
-      "Solid understanding of software design patterns and architecture",
-      "Excellent problem-solving and analytical skills",
-      "BS/MS in Computer Science or equivalent practical experience",
-    ],
-    responsibilities: [
-      "Design and implement scalable software solutions",
-      "Collaborate with cross-functional teams to define and implement new features",
-      "Write clean, maintainable, and efficient code",
-      "Participate in code reviews and mentor junior developers",
-      "Troubleshoot and debug issues in production environments",
-      "Stay up-to-date with emerging technologies and industry trends",
-    ],
-  };
-};
+}
 
 interface PageProps {
   params: {
-    jobId: string;
-  };
+    jobId: string
+  }
 }
 
 // Generate static paths for job IDs
-export function generateStaticParams() {
-  // For static site, pre-generate pages for all mock job IDs
-  return [
-    { jobId: 'job-001' },
-    { jobId: 'job-002' },
-    { jobId: 'job-003' },
-    { jobId: 'job-004' },
-    { jobId: 'job-005' },
-    { jobId: 'job-006' },
-  ];
+export async function generateStaticParams() {
+  // For static site, fetch all job IDs from the database
+  const jobIds = await getAllJobIds()
+
+  // If no jobs are found, provide at least one fallback path
+  if (jobIds.length === 0) {
+    return [{ jobId: "1" }]
+  }
+
+  return jobIds.map((jobId) => ({
+    jobId,
+  }))
 }
 
-export default function ApplyPage({ params }: PageProps) {
-  const jobDetails = getMockJobDetails(params.jobId);
+export default async function ApplyPage({ params }: PageProps) {
+  // Convert jobId to number for database query
+  const jobId = Number.parseInt(params.jobId, 10)
+
+  if (isNaN(jobId)) {
+    notFound()
+  }
+
+  // Fetch job details from database
+  const { success, job, error } = await getJobById(jobId)
+
+  if (!success || !job) {
+    notFound()
+  }
+
+  // Format requirements and responsibilities as arrays for the JobDetail component
+  // (assuming they're stored as strings in the database)
+  const formattedJob = {
+    id: job.id.toString(),
+    title: job.title,
+    location: job.location,
+    department: job.department,
+    description: job.description,
+    // Split by newlines and filter out empty strings
+    requirements: job.requirements.split("\n").filter((item) => item.trim() !== ""),
+    responsibilities: job.responsibilities.split("\n").filter((item) => item.trim() !== ""),
+  }
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -67,21 +68,21 @@ export default function ApplyPage({ params }: PageProps) {
           <div className="lg:col-span-1">
             <h1 className="text-2xl font-bold mb-6">Job Details</h1>
             <JobDetail
-              title={jobDetails.title}
-              location={jobDetails.location}
-              department={jobDetails.department}
-              description={jobDetails.description}
-              requirements={jobDetails.requirements}
-              responsibilities={jobDetails.responsibilities}
+              title={formattedJob.title}
+              location={formattedJob.location}
+              department={formattedJob.department}
+              description={formattedJob.description}
+              requirements={formattedJob.requirements}
+              responsibilities={formattedJob.responsibilities}
             />
           </div>
           <div className="lg:col-span-2">
             <h1 className="text-2xl font-bold mb-6">Application Form</h1>
-            <JobApplicationForm jobId={jobDetails.id} jobTitle={jobDetails.title} />
+            <JobApplicationForm jobId={job.id} jobTitle={job.title} />
           </div>
         </div>
       </main>
       <Footer />
     </div>
-  );
+  )
 }

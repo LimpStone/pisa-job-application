@@ -1,46 +1,34 @@
-"use client";
-import type React from "react";
-import { useState } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { toast } from "sonner";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import FileUpload from "@/components/file-upload";
-import SkillInput from "@/components/skill-input";
-import ProjectInput from "@/components/project-input";
-import ConfirmationDialog from "@/components/confirmation-dialog";
-import { Card, CardContent } from "@/components/ui/card";
-import { applicationFormSchema, type ApplicationFormValues } from "@/lib/schema";
+"use client"
+import { useState } from "react"
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
+import { Input } from "@/components/ui/input"
+import { Button } from "@/components/ui/button"
+import { Textarea } from "@/components/ui/textarea"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Card, CardContent } from "@/components/ui/card"
+import { useToast } from "@/hooks/use-toast"
+import FileUpload from "@/components/file-upload"
+import SkillInput from "@/components/skill-input"
+import ProjectInput from "@/components/project-input"
+import ConfirmationDialog from "@/components/confirmation-dialog"
+import { applicationFormSchema, type ApplicationFormValues } from "@/lib/schema"
+import { submitApplication } from "@/app/actions/application-actions"
 
 interface JobApplicationFormProps {
-  jobId: string;
-  jobTitle: string;
+  jobId: number
+  jobTitle: string
 }
 
-const educationLevels: ("High School" | "Associate's Degree" | "Bachelor's Degree" | "Master's Degree" | "Doctorate" | "Other")[] = [
-  "High School",
-  "Associate's Degree",
-  "Bachelor's Degree",
-  "Master's Degree",
-  "Doctorate",
-];
+const educationLevels: (
+  | "High School"
+  | "Associate's Degree"
+  | "Bachelor's Degree"
+  | "Master's Degree"
+  | "Doctorate"
+  | "Other"
+)[] = ["High School", "Associate's Degree", "Bachelor's Degree", "Master's Degree", "Doctorate"]
 
 const experienceLevels: ("0-1 years" | "1-3 years" | "3-5 years" | "5-10 years" | "10+ years")[] = [
   "0-1 years",
@@ -48,17 +36,15 @@ const experienceLevels: ("0-1 years" | "1-3 years" | "3-5 years" | "5-10 years" 
   "3-5 years",
   "5-10 years",
   "10+ years",
-];
+]
 
-const JobApplicationForm: React.FC<JobApplicationFormProps> = ({
-  jobId,
-  jobTitle,
-}) => {
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [resumeFile, setResumeFile] = useState<File | null>(null);
-  const [confirmationOpen, setConfirmationOpen] = useState(false);
-  const [applicationId, setApplicationId] = useState("");
-  
+export default function JobApplicationForm({ jobId, jobTitle }: JobApplicationFormProps) {
+  const { toast } = useToast()
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [resumeFile, setResumeFile] = useState<File | null>(null)
+  const [confirmationOpen, setConfirmationOpen] = useState(false)
+  const [applicationId, setApplicationId] = useState("")
+
   const form = useForm<ApplicationFormValues>({
     resolver: zodResolver(applicationFormSchema),
     defaultValues: {
@@ -84,47 +70,54 @@ const JobApplicationForm: React.FC<JobApplicationFormProps> = ({
         achievements: "",
       },
       skills: [],
-      otherSkills: "",
       projects: [],
       coverLetter: "",
       portfolioWebsite: "",
       linkedIn: "",
       github: "",
       hasResume: false,
-      agreeToTerms: false,
+      agreeToTerms: undefined,
+      jobId: jobId, // Set the jobId from props
     },
-  });
-  
+  })
+
   async function onSubmit(values: ApplicationFormValues) {
     try {
-      setIsSubmitting(true);
-      console.log('Sending values:', values);
+      setIsSubmitting(true)
 
-      const response = await fetch("/api/applications", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(values),
-      });
+      // Set hasResume based on whether a resume file was uploaded
+      values.hasResume = resumeFile !== null
 
-      const result = await response.json();
+      // Submit application to the server
+      const result = await submitApplication(values)
 
-      if (!response.ok) {
-        console.error('Server error:', result);
-        throw new Error(result.message || "Failed to submit application");
+      if (result.success) {
+        // Set application ID for confirmation dialog
+        setApplicationId(result.applicationId ? result.applicationId.toString() : "")
+        setConfirmationOpen(true)
+        form.reset()
+        setResumeFile(null)
+
+        toast({
+          title: "Application Submitted",
+          description: `Your application for ${jobTitle} has been submitted successfully.`,
+        })
+      } else {
+        toast({
+          title: "Error",
+          description: result.message || "Failed to submit application. Please try again.",
+          variant: "destructive",
+        })
       }
-
-      setApplicationId(result.applicationId);
-      setConfirmationOpen(true);
-      form.reset();
-      setResumeFile(null);
-      toast.success("Application submitted successfully!");
     } catch (error) {
-      console.error('Submission error:', error);
-      toast.error(error instanceof Error ? error.message : "Failed to submit application. Please try again.");
+      console.error("Submission error:", error)
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to submit application. Please try again.",
+        variant: "destructive",
+      })
     } finally {
-      setIsSubmitting(false);
+      setIsSubmitting(false)
     }
   }
 
@@ -268,10 +261,7 @@ const JobApplicationForm: React.FC<JobApplicationFormProps> = ({
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Highest Level of Education</FormLabel>
-                        <Select
-                          onValueChange={field.onChange}
-                          defaultValue={field.value}
-                        >
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
                           <FormControl>
                             <SelectTrigger>
                               <SelectValue placeholder="Select education level" />
@@ -341,10 +331,7 @@ const JobApplicationForm: React.FC<JobApplicationFormProps> = ({
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Years of Experience</FormLabel>
-                        <Select
-                          onValueChange={field.onChange}
-                          defaultValue={field.value}
-                        >
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
                           <FormControl>
                             <SelectTrigger>
                               <SelectValue placeholder="Select experience level" />
@@ -430,23 +417,6 @@ const JobApplicationForm: React.FC<JobApplicationFormProps> = ({
                       </FormItem>
                     )}
                   />
-                  <FormField
-                    control={form.control}
-                    name="otherSkills"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Other Skills</FormLabel>
-                        <FormControl>
-                          <Textarea
-                            {...field}
-                            placeholder="List any other relevant skills or qualifications"
-                            className="min-h-[100px]"
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
                 </div>
               </div>
 
@@ -458,10 +428,7 @@ const JobApplicationForm: React.FC<JobApplicationFormProps> = ({
                   render={({ field }) => (
                     <FormItem>
                       <FormControl>
-                        <ProjectInput
-                          projects={field.value || []}
-                          setProjects={field.onChange}
-                        />
+                        <ProjectInput projects={field.value || []} setProjects={field.onChange} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -562,19 +529,11 @@ const JobApplicationForm: React.FC<JobApplicationFormProps> = ({
                       <div className="space-y-1 leading-none">
                         <FormLabel>
                           I agree to the{" "}
-                          <a
-                            href="/terms"
-                            target="_blank"
-                            className="text-blue-600 hover:underline" rel="noreferrer"
-                          >
+                          <a href="/terms" target="_blank" className="text-blue-600 hover:underline" rel="noreferrer">
                             Terms and Conditions
                           </a>{" "}
                           and{" "}
-                          <a
-                            href="/privacy"
-                            target="_blank"
-                            className="text-blue-600 hover:underline" rel="noreferrer"
-                          >
+                          <a href="/privacy" target="_blank" className="text-blue-600 hover:underline" rel="noreferrer">
                             Privacy Policy
                           </a>
                         </FormLabel>
@@ -583,12 +542,7 @@ const JobApplicationForm: React.FC<JobApplicationFormProps> = ({
                     </FormItem>
                   )}
                 />
-                <Button
-                  type="submit"
-                  className="w-full"
-                  size="lg"
-                  disabled={isSubmitting}
-                >
+                <Button type="submit" className="w-full" size="lg" disabled={isSubmitting}>
                   {isSubmitting ? "Submitting..." : "Submit Application"}
                 </Button>
               </div>
@@ -603,7 +557,5 @@ const JobApplicationForm: React.FC<JobApplicationFormProps> = ({
         applicationId={applicationId}
       />
     </>
-  );
-};
-
-export default JobApplicationForm;
+  )
+}

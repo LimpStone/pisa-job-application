@@ -2,6 +2,7 @@
 const nextConfig = {
   output: 'export',
   distDir: 'out',
+  trailingSlash: true,
   /* config options here */
   eslint: {
     // we use biome for linting
