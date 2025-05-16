@@ -12,9 +12,9 @@ export const metadata: Metadata = {
 }
 
 interface PageProps {
-  params: {
+  params: Promise< {
     jobId: string
-  }
+  }>
 }
 
 // Generate static paths for job IDs
@@ -33,8 +33,12 @@ export async function generateStaticParams() {
 }
 
 export default async function ApplyPage({ params }: PageProps) {
+  const awaitedparams = await params
+  if (!awaitedparams?.jobId) {
+    notFound()
+  }
   // Convert jobId to number for database query
-  const jobId = Number.parseInt(params.jobId, 10)
+  const jobId = Number.parseInt(awaitedparams.jobId, 10)
 
   if (isNaN(jobId)) {
     notFound()
@@ -48,7 +52,6 @@ export default async function ApplyPage({ params }: PageProps) {
   }
 
   // Format requirements and responsibilities as arrays for the JobDetail component
-  // (assuming they're stored as strings in the database)
   const formattedJob = {
     id: job.id.toString(),
     title: job.title,

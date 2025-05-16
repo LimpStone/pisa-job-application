@@ -23,6 +23,7 @@ export default function ConfirmationDialog({ open, onClose, applicationId }: Con
           <p className="text-sm text-gray-500">
             Your application ID: <span className="font-mono font-medium">{applicationId}</span>
           </p>
+          <p className="text-sm text-blue-600">You will be redirected to the home page in a few seconds...</p>
         </div>
         <DialogFooter className="sm:justify-center">
           <Button onClick={onClose}>Close</Button>
