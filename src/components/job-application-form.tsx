@@ -2,6 +2,7 @@
 import { useState } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
+import { useRouter } from "next/navigation"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -40,6 +41,7 @@ const experienceLevels: ("0-1 years" | "1-3 years" | "3-5 years" | "5-10 years" 
 
 export default function JobApplicationForm({ jobId, jobTitle }: JobApplicationFormProps) {
   const { toast } = useToast()
+  const router = useRouter()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [resumeFile, setResumeFile] = useState<File | null>(null)
   const [confirmationOpen, setConfirmationOpen] = useState(false)
@@ -102,6 +104,11 @@ export default function JobApplicationForm({ jobId, jobTitle }: JobApplicationFo
           title: "Application Submitted",
           description: `Your application for ${jobTitle} has been submitted successfully.`,
         })
+
+        // Set a timeout to redirect to home page after showing the confirmation dialog
+        setTimeout(() => {
+          router.push("/")
+        }, 3000) // Redirect after 3 seconds
       } else {
         toast({
           title: "Error",
@@ -297,9 +304,9 @@ export default function JobApplicationForm({ jobId, jobTitle }: JobApplicationFo
                     name="education.fieldOfStudy"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Field of Study</FormLabel>
+                        <FormLabel>Major Name</FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder="e.g., Computer Science" />
+                          <Input {...field} placeholder="e.g., Civil Engineering" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>

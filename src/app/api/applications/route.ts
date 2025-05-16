@@ -1,13 +1,16 @@
-import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
-import { applicationFormSchema, type ApplicationFormValues } from "@/lib/schema";
+import { NextResponse } from "next/server"
+import { PrismaClient } from "@prisma/client"
+import { applicationFormSchema } from "@/lib/schema"
+
+const prisma = new PrismaClient()
+
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
-    console.log('Received data:', body);
+    const body = await request.json()
+    console.log("Received data:", body)
 
     // Validate the data against the schema
-    const data = applicationFormSchema.parse(body);
+    const data = applicationFormSchema.parse(body)
 
     // Create the application with related data
     const application = await prisma.application.create({
@@ -27,6 +30,7 @@ export async function POST(request: Request) {
         github: data.github || null,
         hasResume: data.hasResume,
         agreeToTerms: data.agreeToTerms,
+        jobId: data.jobId,
         education: {
           create: {
             highestLevel: data.education.highestLevel,
@@ -62,21 +66,78 @@ export async function POST(request: Request) {
         skills: true,
         projects: true,
       },
-    });
+    })
 
-    return NextResponse.json({ 
-      message: "Application submitted successfully",
-      applicationId: application.id,
-    }, { status: 201 });
+    // Run prediction model
+    try {
+      // Prepare data for the prediction model
+      const predictionData = {
+        applicationId: application.id,
+        firstName: data.firstName,
+        lastName: data.lastName,
+        education: {
+          highestLevel: data.education.highestLevel,
+          fieldOfStudy: data.education.fieldOfStudy,
+        },
+        experience: {
+          totalYears: data.experience.totalYears,
+        },
+        skills: data.skills,
+        jobId: data.jobId,
+      }
 
+      // Fix: Use absolute URL with origin for API call
+      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
+
+      // Call the prediction API with absolute URL
+      const response = await fetch(`${baseUrl}/api/run-prediction`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(predictionData),
+      })
+
+      const predictionResult = await response.json()
+
+      if (predictionResult.success && predictionResult.result) {
+        // Store prediction result in the score field
+        await prisma.application.update({
+          where: { id: application.id },
+          data: {
+            score: predictionResult.result.score,
+          },
+        })
+
+        console.log("Prediction successful and stored:", predictionResult.result)
+      } else {
+        console.error("Prediction failed:", predictionResult.error)
+      }
+    } catch (predictionError) {
+      // Log the error but don't fail the application submission
+      console.error("Error running prediction model:", predictionError)
+    }
+
+    return NextResponse.json(
+      {
+        message: "Application submitted successfully",
+        applicationId: application.id,
+      },
+      { status: 201 },
+    )
   } catch (error) {
-    console.error('API error:', error);
-    
+    console.error("API error:", error)
+
     // Return more detailed error information
-    return NextResponse.json({ 
-      message: "Error submitting application",
-      error: error instanceof Error ? error.message : 'Unknown error',
-      details: error
-    }, { status: 400 });
+    return NextResponse.json(
+      {
+        message: "Error submitting application",
+        error: error instanceof Error ? error.message : "Unknown error",
+        details: error,
+      },
+      { status: 400 },
+    )
+  } finally {
+    await prisma.$disconnect()
   }
 }
