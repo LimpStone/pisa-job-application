@@ -1,0 +1,42 @@
+name: Deploy to Oracle VM
+
+on:
+  push:
+    branches:
+      - main
+      
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Set up SSH
+      run: |
+        mkdir -p ~/.ssh
+        echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+        chmod 600 ~/.ssh/id_rsa
+        ssh-keyscan -H 160.34.209.175 >> ~/.ssh/known_hosts
+
+    - name: Deploy to Oracle VM and rebuild Docker container
+      run: |
+        ssh ubuntu@160.34.209.175 << 'EOF'
+          cd pisa-job-application
+
+          # Opcional: actualizar repositorio
+          git pull origin main
+
+          # Reconstruir imagen Docker
+          docker stop pisa-container || true
+          docker rm pisa-container || true
+          docker build -t pisa-app .
+
+          # Correr nuevo contenedor con .env
+          docker run -d \
+            --name pisa-container \
+            --env-file .env \
+            -p 3000:3000 \
+            pisa-app
+        EOF
