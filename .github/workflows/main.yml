@@ -37,7 +37,7 @@ jobs:
           sudo docker build -t pisa-job-app .
 
           # Ejecutar el contenedor con un nombre específico y --rm
-          sudo docker run --rm \
+          sudo docker run -d \
             --name pisa-app \
             --env-file .env \
             -p 3000:3000 \
