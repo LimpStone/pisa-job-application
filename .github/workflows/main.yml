@@ -29,6 +29,7 @@ jobs:
 
           # Reconstruir imagen Docker
           sudo docker stop pisa-app || true
+          sleep 2
           sudo docker rm pisa-app || true
           sudo docker build -t pisa-app .
 
