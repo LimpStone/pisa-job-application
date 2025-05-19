@@ -27,19 +27,32 @@ jobs:
 
           git pull origin main
 
-          # Detener cualquier contenedor que use el puerto 3000
-          sudo docker ps -q --filter "publish=3000" | xargs -r docker stop
+          # Detener y eliminar cualquier contenedor usando el puerto 3000
+          PORT=3000
+          CONTAINERS=$(sudo docker ps -q --filter "publish=${PORT}")
+          if [ -n "$CONTAINERS" ]; then
+            echo "Stopping containers on port $PORT..."
+            echo "$CONTAINERS" | xargs -r sudo docker stop
+            sleep 2
+            echo "$CONTAINERS" | xargs -r sudo docker rm -f
+          fi
 
-          # Eliminar el contenedor anterior si existe
-          sudo docker rm -f pisa-app || true
+          # Matar cualquier proceso que esté usando el puerto 3000
+          PID=$(sudo lsof -t -i:${PORT})
+          if [ -n "$PID" ]; then
+            echo "Killing process using port $PORT: PID $PID"
+            sudo kill -9 $PID
+            sleep 2
+          fi
 
-          # Construir la imagen con un tag específico
+          # Construir imagen
           sudo docker build -t pisa-job-app .
 
-          # Ejecutar el contenedor con un nombre específico y --rm
+          # Correr contenedor
           sudo docker run -d \
             --name pisa-app \
             --env-file .env \
             -p 3000:3000 \
             pisa-job-app
         EOF
+
