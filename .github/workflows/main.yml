@@ -25,7 +25,6 @@ jobs:
         ssh ubuntu@160.34.209.175 << 'EOF'
           cd pisa-job-application
 
-          # Opcional: actualizar repositorio
           git pull origin main
 
           # Reconstruir imagen Docker
@@ -33,9 +32,8 @@ jobs:
           sudo docker rm pisa-app || true
           sudo docker build -t pisa-app .
 
-          # Correr nuevo contenedor con .env
           sudo docker run -d \
-            --name pisa-container \
+            --name pisa-app \
             --env-file .env \
             -p 3000:3000 \
             pisa-app
