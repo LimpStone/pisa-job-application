@@ -12,9 +12,11 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { createJob } from "@/app/actions/job-actions"
 import { useToast } from "@/hooks/use-toast"
 import { Loader2 } from "lucide-react"
+import { useRouter } from "next/navigation"
 
 export function CreateJobPanel() {
   const { toast } = useToast()
+  const router = useRouter()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [jobData, setJobData] = useState({
     title: "",
@@ -70,6 +72,9 @@ export function CreateJobPanel() {
           requirements: "",
           responsibilities: "",
         })
+
+        // Refresh the page to show the new job
+        router.refresh()
       } else {
         toast({
           title: "Error",

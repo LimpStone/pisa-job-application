@@ -1,12 +1,12 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Edit, BarChart2, MapPin, Briefcase, Clock, Building, Loader2 } from "lucide-react"
+import { Edit, BarChart2, MapPin, Briefcase, Clock, Building } from "lucide-react"
 import { EditJobModal } from "./edit-job-modal"
-import { getJobs, deleteJob, updateJob } from "@/app/actions/job-actions"
+import { deleteJob, updateJob } from "@/app/actions/job-actions"
 import { useToast } from "@/hooks/use-toast"
 import { format } from "date-fns"
 
@@ -26,33 +26,16 @@ interface Job {
   responsibilities: string
 }
 
-export function JobGrid() {
+interface JobGridProps {
+  initialJobs: Job[]
+}
+
+export function JobGrid({ initialJobs }: JobGridProps) {
   const router = useRouter()
   const { toast } = useToast()
-  const [jobs, setJobs] = useState<Job[]>([])
-  const [loading, setLoading] = useState(true)
+  const [jobs, setJobs] = useState<Job[]>(initialJobs)
   const [selectedJob, setSelectedJob] = useState<Job | null>(null)
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
-
-  useEffect(() => {
-    async function loadJobs() {
-      try {
-        const fetchedJobs = await getJobs()
-        setJobs(fetchedJobs)
-      } catch (error) {
-        console.error("Error loading jobs:", error)
-        toast({
-          title: "Error",
-          description: "Failed to load jobs. Please refresh the page.",
-          variant: "destructive",
-        })
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    loadJobs()
-  }, [toast])
 
   const handleEdit = (jobId: number) => {
     const job = jobs.find((j) => j.id === jobId) || null
@@ -116,15 +99,6 @@ export function JobGrid() {
         variant: "destructive",
       })
     }
-  }
-
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-        <span className="ml-2">Loading jobs...</span>
-      </div>
-    )
   }
 
   if (jobs.length === 0) {

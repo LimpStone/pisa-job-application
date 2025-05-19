@@ -3,8 +3,12 @@ import Header from "@/components/ui/header";
 import { SearchBar } from "@/components/search-bar";
 import { JobGrid } from "@/components/job-grid"
 import { CreateJobPanel } from "@/components/create-job-panel"
+import { getJobs } from "@/app/actions/job-actions"
 
-const PisaManager = () => {
+const PisaManager = async () => {
+  // Fetch jobs server-side
+  const jobs = await getJobs()
+
   return (
     <div className="flex flex-col min-h-screen">
       <Header />
@@ -24,14 +28,12 @@ const PisaManager = () => {
           <div className="lg:w-3/4">
             <SearchBar />
             <div className="mt-6">
-              <JobGrid />
+              <JobGrid initialJobs={jobs} />
             </div>
           </div>
         </div>
       </main>
     </div>
-
-
   );
 };
 
