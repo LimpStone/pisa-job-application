@@ -28,16 +28,16 @@ jobs:
           git pull origin main
 
           # Detener cualquier contenedor que use el puerto 3000
-          docker ps -q --filter "publish=3000" | xargs -r docker stop
+          sudo docker ps -q --filter "publish=3000" | xargs -r docker stop
 
           # Eliminar el contenedor anterior si existe
-          docker rm -f pisa-app || true
+          sudo docker rm -f pisa-app || true
 
           # Construir la imagen con un tag específico
-          docker build -t pisa-job-app .
+          sudo docker build -t pisa-job-app .
 
           # Ejecutar el contenedor con un nombre específico y --rm
-          docker run --rm \
+          sudo docker run --rm \
             --name pisa-app \
             --env-file .env \
             -p 3000:3000 \
