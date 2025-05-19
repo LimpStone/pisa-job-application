@@ -13,95 +13,127 @@ import { EducationPieChart } from "@/components/charts/education-pie-chart"
 import { SkillsBarChart } from "@/components/charts/skills-bar-chart"
 import { LocationMap } from "@/components/charts/location-map"
 import { ExperienceChart } from "@/components/charts/experience-chart"
+import { getJobApplications } from "@/app/actions/job-actions"
 
-// Mock job data - ensure these IDs match what's in job-grid.tsx
-const jobsData = [
-  {
-    id: 1,
-    title: "Frontend Developer",
-    company: "Tech Solutions Inc.",
-    department: "Engineering",
-  },
-  {
-    id: 2,
-    title: "Backend Engineer",
-    company: "Data Systems",
-    department: "Engineering",
-  },
-  {
-    id: 3,
-    title: "Full Stack Developer",
-    company: "Web Innovations",
-    department: "Product",
-  },
-  {
-    id: 4,
-    title: "UX Designer",
-    company: "Creative Labs",
-    department: "Design",
-  },
-  {
-    id: 5,
-    title: "DevOps Engineer",
-    company: "Cloud Services",
-    department: "Infrastructure",
-  },
-  {
-    id: 6,
-    title: "Data Scientist",
-    company: "Analytics Pro",
-    department: "Data",
-  },
-]
+interface JobInsightsClientPageProps {
+  initialData: {
+    job: {
+      id: number
+      title: string
+      company: string
+      department: string
+    }
+    stats: {
+      totalApplications: number
+      averageScore: number
+      educationStats: Record<string, number>
+      skillsStats: Record<string, number>
+      experienceStats: Record<string, number>
+      locationStats: Record<string, number>
+      applications: Array<{ score: number }>
+    }
+  }
+}
 
-export default function JobInsightsClientPage() {
+export default function JobInsightsClientPage({ initialData }: JobInsightsClientPageProps) {
   const router = useRouter()
   const params = useParams()
-  const [job, setJob] = useState<any>(null)
   const [chartMetric, setChartMetric] = useState("score")
+  const [applications, setApplications] = useState<any[]>([])
 
   useEffect(() => {
-    // Get jobId directly from the URL params
-    const jobIdParam = params?.jobId
-
-    // Log the raw jobId from URL params
-    console.log("Raw jobId from URL params:", jobIdParam)
-
-    // Parse the jobId as a number, with a fallback to prevent NaN
-    const jobId = jobIdParam ? Number.parseInt(jobIdParam as string, 10) : 0
-
-    console.log("Parsed jobId:", jobId)
-    console.log(
-      "Available jobs:",
-      jobsData.map((j) => j.id),
-    )
-
-    // In a real app, fetch job data from API
-    const foundJob = jobsData.find((j) => j.id === jobId)
-
-    console.log("Found job:", foundJob)
-
-    if (foundJob) {
-      setJob(foundJob)
-    } else {
-      console.log("Job not found, redirecting to /PisaManager")
-      // Job not found, redirect back to PisaManager page
-      router.push("/PisaManager")
+    const loadApplications = async () => {
+      try {
+        const jobId = parseInt(params.jobId as string)
+        const apps = await getJobApplications(jobId)
+        setApplications(apps)
+      } catch (error) {
+        console.error("Error loading applications:", error)
+      }
     }
-  }, [params, router])
 
-  // If job is null, show loading state
-  if (!job) {
-    return (
-      <div className="flex flex-col justify-center items-center h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mb-4"></div>
-        <p>Loading job insights...</p>
-      </div>
-    )
+    loadApplications()
+  }, [params.jobId])
+
+  const { job, stats } = initialData
+
+  const renderVisualization = () => {
+    switch (chartMetric) {
+      case "score":
+        return (
+          <Tabs defaultValue="chart" className="w-full">
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="chart">Chart</TabsTrigger>
+              <TabsTrigger value="pie">Pie</TabsTrigger>
+              <TabsTrigger value="distribution">Distribution</TabsTrigger>
+            </TabsList>
+            <TabsContent value="chart" className="pt-4">
+              <ScoreDistributionChart jobId={job.id} data={stats} type="bar" />
+            </TabsContent>
+            <TabsContent value="pie" className="pt-4">
+              <EducationPieChart jobId={job.id} data={stats.applications?.reduce((acc, app) => {
+                const range = Math.floor(app.score / 20) * 20
+                const key = `${range}-${range + 19}`
+                acc[key] = (acc[key] || 0) + 1
+                return acc
+              }, {} as Record<string, number>) || {}} />
+            </TabsContent>
+            <TabsContent value="distribution" className="pt-4">
+              <ScoreDistributionChart jobId={job.id} data={stats} type="dot" />
+            </TabsContent>
+          </Tabs>
+        )
+      case "education":
+        return (
+          <Tabs defaultValue="chart" className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="chart">Chart</TabsTrigger>
+              <TabsTrigger value="pie">Pie</TabsTrigger>
+            </TabsList>
+            <TabsContent value="chart" className="pt-4">
+              <SkillsBarChart jobId={job.id} data={stats.educationStats} />
+            </TabsContent>
+            <TabsContent value="pie" className="pt-4">
+              <EducationPieChart jobId={job.id} data={stats.educationStats} />
+            </TabsContent>
+          </Tabs>
+        )
+      case "skills":
+        return (
+          <Tabs defaultValue="chart" className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="chart">Chart</TabsTrigger>
+              <TabsTrigger value="pie">Pie</TabsTrigger>
+            </TabsList>
+            <TabsContent value="chart" className="pt-4">
+              <SkillsBarChart jobId={job.id} data={stats.skillsStats} />
+            </TabsContent>
+            <TabsContent value="pie" className="pt-4">
+              <EducationPieChart jobId={job.id} data={stats.skillsStats} />
+            </TabsContent>
+          </Tabs>
+        )
+      case "experience":
+        return (
+          <Tabs defaultValue="chart" className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="chart">Chart</TabsTrigger>
+              <TabsTrigger value="pie">Pie</TabsTrigger>
+            </TabsList>
+            <TabsContent value="chart" className="pt-4">
+              <ExperienceChart jobId={job.id} data={stats.experienceStats} />
+            </TabsContent>
+            <TabsContent value="pie" className="pt-4">
+              <EducationPieChart jobId={job.id} data={stats.experienceStats} />
+            </TabsContent>
+          </Tabs>
+        )
+      case "location":
+        return <LocationMap jobId={job.id} data={stats.locationStats} />
+      default:
+        return null
+    }
   }
-
-  // Parse jobId for chart components
-  const jobId = params?.jobId ? Number.parseInt(params.jobId as string, 10) : 0
 
   return (
     <div className="container mx-auto p-4 space-y-6">
@@ -136,25 +168,7 @@ export default function JobInsightsClientPage() {
               </Select>
             </CardHeader>
             <CardContent>
-              <Tabs defaultValue="chart" className="w-full">
-                <TabsList className="grid w-full grid-cols-3">
-                  <TabsTrigger value="chart">Chart</TabsTrigger>
-                  <TabsTrigger value="map">Map</TabsTrigger>
-                  <TabsTrigger value="distribution">Distribution</TabsTrigger>
-                </TabsList>
-                <TabsContent value="chart" className="pt-4">
-                  {chartMetric === "score" && <ScoreDistributionChart jobId={jobId} />}
-                  {chartMetric === "education" && <EducationPieChart jobId={jobId} />}
-                  {chartMetric === "skills" && <SkillsBarChart jobId={jobId} />}
-                  {chartMetric === "experience" && <ExperienceChart jobId={jobId} />}
-                </TabsContent>
-                <TabsContent value="map" className="pt-4">
-                  <LocationMap jobId={jobId} />
-                </TabsContent>
-                <TabsContent value="distribution" className="pt-4">
-                  <ScoreDistributionChart jobId={jobId} type="dot" />
-                </TabsContent>
-              </Tabs>
+              {renderVisualization()}
             </CardContent>
           </Card>
 
@@ -163,7 +177,7 @@ export default function JobInsightsClientPage() {
               <CardTitle className="text-lg font-medium">Top Skills</CardTitle>
             </CardHeader>
             <CardContent>
-              <SkillsBarChart jobId={jobId} limit={5} />
+              <SkillsBarChart jobId={job.id} data={stats.skillsStats} limit={5} />
             </CardContent>
           </Card>
         </div>
@@ -172,7 +186,7 @@ export default function JobInsightsClientPage() {
           <Card className="h-full">
             <CardHeader>
               <CardTitle className="text-lg font-medium flex items-center justify-between">
-                <span>Candidates</span>
+                <span>Candidates ({stats.totalApplications})</span>
                 <Button variant="outline" size="sm" className="flex items-center gap-1">
                   <Filter className="h-4 w-4" />
                   Filter
@@ -180,7 +194,7 @@ export default function JobInsightsClientPage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <CandidateList jobId={jobId} />
+              <CandidateList jobId={job.id}/>
             </CardContent>
           </Card>
         </div>

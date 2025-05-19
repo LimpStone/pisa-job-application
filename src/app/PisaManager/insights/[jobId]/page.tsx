@@ -1,4 +1,6 @@
+import { getJobInsights } from "@/app/actions/job-actions"
 import JobInsightsClientPage from "./JobInsightsClientPage"
+import { notFound } from "next/navigation"
 
 // Mock job data
 const jobsData = [
@@ -47,6 +49,20 @@ export function generateStaticParams() {
   }))
 }
 
-export default function JobInsightsPage() {
-  return <JobInsightsClientPage />
+interface PageProps {
+  params: {
+    jobId: string
+  }
+}
+
+export default async function JobInsightsPage({ params }: PageProps) {
+  try {
+    const jobId = parseInt(params.jobId)
+    const { job, stats } = await getJobInsights(jobId)
+    
+    return <JobInsightsClientPage initialData={{ job, stats }} />
+  } catch (error) {
+    console.error("Error loading job insights:", error)
+    notFound()
+  }
 }

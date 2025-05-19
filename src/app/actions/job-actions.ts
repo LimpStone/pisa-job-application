@@ -88,3 +88,106 @@ export async function deleteJob(jobId: number) {
     return { success: false, message: "Failed to delete job" }
   }
 }
+
+export async function getJobInsights(jobId: number) {
+  noStore()
+  try {
+    const job = await prisma.job.findUnique({
+      where: { id: jobId },
+      include: {
+        applications: {
+          include: {
+            education: true,
+            experience: true,
+            skills: true,
+            projects: true,
+          },
+        },
+      },
+    })
+
+    if (!job) {
+      throw new Error("Job not found")
+    }
+
+    // Calcular estadísticas
+    const totalApplications = job.applications.length
+    const averageScore = totalApplications > 0
+      ? job.applications.reduce((acc, app) => acc + app.score, 0) / totalApplications
+      : 0
+
+    // Agrupar por nivel educativo
+    const educationStats = job.applications.reduce((acc, app) => {
+      app.education.forEach(edu => {
+        acc[edu.highestLevel] = (acc[edu.highestLevel] || 0) + 1
+      })
+      return acc
+    }, {} as Record<string, number>)
+
+    // Agrupar por habilidades
+    const skillsStats = job.applications.reduce((acc, app) => {
+      app.skills.forEach(skill => {
+        acc[skill.skill] = (acc[skill.skill] || 0) + 1
+      })
+      return acc
+    }, {} as Record<string, number>)
+
+    // Agrupar por experiencia
+    const experienceStats = job.applications.reduce((acc, app) => {
+      app.experience.forEach(exp => {
+        const years = parseInt(exp.totalYears) || 0
+        if (years <= 2) acc["0-2"] = (acc["0-2"] || 0) + 1
+        else if (years <= 5) acc["3-5"] = (acc["3-5"] || 0) + 1
+        else if (years <= 10) acc["6-10"] = (acc["6-10"] || 0) + 1
+        else acc["10+"] = (acc["10+"] || 0) + 1
+      })
+      return acc
+    }, {} as Record<string, number>)
+
+    // Agrupar por ubicación - ahora solo usamos el estado
+    const locationStats = job.applications.reduce((acc, app) => {
+      const state = app.state.trim()
+      acc[state] = (acc[state] || 0) + 1
+      return acc
+    }, {} as Record<string, number>)
+
+    return {
+      job,
+      stats: {
+        totalApplications,
+        averageScore,
+        educationStats,
+        skillsStats,
+        experienceStats,
+        locationStats,
+        applications: job.applications.map(app => ({ score: app.score }))
+      },
+    }
+  } catch (error) {
+    console.error("Error fetching job insights:", error)
+    throw new Error("Failed to fetch job insights")
+  }
+}
+
+export async function getJobApplications(jobId: number) {
+  noStore()
+  try {
+    const applications = await prisma.application.findMany({
+      where: { jobId },
+      include: {
+        education: true,
+        experience: true,
+        skills: true,
+        projects: true,
+      },
+      orderBy: {
+        score: "desc",
+      },
+    })
+
+    return applications
+  } catch (error) {
+    console.error("Error fetching job applications:", error)
+    throw new Error("Failed to fetch job applications")
+  }
+}
