@@ -1,12 +1,12 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Edit, BarChart2, MapPin, Briefcase, Clock, Building } from "lucide-react"
 import { EditJobModal } from "./edit-job-modal"
-import { deleteJob, updateJob } from "@/app/actions/job-actions"
+import { deleteJob, updateJob, getJobs } from "@/app/actions/job-actions"
 import { useToast } from "@/hooks/use-toast"
 import { format } from "date-fns"
 
@@ -37,6 +37,16 @@ export function JobGrid({ initialJobs }: JobGridProps) {
   const [selectedJob, setSelectedJob] = useState<Job | null>(null)
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
 
+  // Función para recargar los trabajos
+  const refreshJobs = async () => {
+    try {
+      const updatedJobs = await getJobs()
+      setJobs(updatedJobs)
+    } catch (error) {
+      console.error("Error refreshing jobs:", error)
+    }
+  }
+
   const handleEdit = (jobId: number) => {
     const job = jobs.find((j) => j.id === jobId) || null
     setSelectedJob(job)
@@ -52,7 +62,7 @@ export function JobGrid({ initialJobs }: JobGridProps) {
       const result = await updateJob(updatedJob.id, updatedJob)
 
       if (result.success) {
-        setJobs(jobs.map((job) => (job.id === updatedJob.id ? updatedJob : job)))
+        await refreshJobs() // Recargar los trabajos después de actualizar
         toast({
           title: "Success",
           description: result.message,
@@ -79,7 +89,7 @@ export function JobGrid({ initialJobs }: JobGridProps) {
       const result = await deleteJob(jobId)
 
       if (result.success) {
-        setJobs(jobs.filter((job) => job.id !== jobId))
+        await refreshJobs() // Recargar los trabajos después de eliminar
         toast({
           title: "Success",
           description: result.message,
@@ -100,6 +110,13 @@ export function JobGrid({ initialJobs }: JobGridProps) {
       })
     }
   }
+
+  // Recargar los trabajos cuando se abre el modal de edición
+  useEffect(() => {
+    if (isEditModalOpen) {
+      refreshJobs()
+    }
+  }, [isEditModalOpen])
 
   if (jobs.length === 0) {
     return (
@@ -157,7 +174,10 @@ export function JobGrid({ initialJobs }: JobGridProps) {
       <EditJobModal
         job={selectedJob}
         isOpen={isEditModalOpen}
-        onClose={() => setIsEditModalOpen(false)}
+        onClose={() => {
+          setIsEditModalOpen(false)
+          refreshJobs() // Recargar los trabajos cuando se cierra el modal
+        }}
         onSave={handleSaveJob}
         onDelete={handleDeleteJob}
       />
