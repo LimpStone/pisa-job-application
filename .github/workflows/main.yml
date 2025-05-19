@@ -29,8 +29,8 @@ jobs:
           git pull origin main
 
           # Reconstruir imagen Docker
-          sudo docker stop pisa-container || true
-          sudo docker rm pisa-container || true
+          sudo docker stop pisa-app || true
+          sudo docker rm pisa-app || true
           sudo docker build -t pisa-app .
 
           # Correr nuevo contenedor con .env
