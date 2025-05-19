@@ -22,12 +22,12 @@ jobs:
 
     - name: Deploy to Oracle VM and rebuild Docker container
       run: |
-        ssh ubuntu@160.34.209.175 << 'EOF'
+        ssh ubuntu@160.34.209.175 << EOF
           cd pisa-job-application
 
           git pull origin main
 
-          # Liberar puerto 3000 si lo está usando otro proceso
+          # Liberar puerto 3000 si está ocupado
           PORT=3000
           PID=\$(sudo lsof -t -i:\$PORT)
           if [ -n "\$PID" ]; then
@@ -36,16 +36,16 @@ jobs:
             sleep 2
           fi
 
-          # Eliminar contenedor con el nombre pisa-app si existe
-          if [ "\$(sudo docker ps -a -q -f name=pisa-app)" ]; then
+          # Eliminar contenedor pisa-app si existe
+          if [ \$(sudo docker ps -a -q -f name=pisa-app) ]; then
             echo "Removing existing pisa-app container..."
             sudo docker rm -f pisa-app
           fi
 
-          # Construir la imagen
+          # Construir nueva imagen
           sudo docker build -t pisa-job-app .
 
-          # Ejecutar nuevo contenedor
+          # Ejecutar contenedor
           sudo docker run -d \
             --name pisa-app \
             --env-file .env \
