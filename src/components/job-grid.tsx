@@ -42,6 +42,7 @@ export function JobGrid({ initialJobs }: JobGridProps) {
     try {
       const updatedJobs = await getJobs()
       setJobs(updatedJobs)
+      router.refresh() // Forzar recarga del router
     } catch (error) {
       console.error("Error refreshing jobs:", error)
     }
@@ -62,7 +63,8 @@ export function JobGrid({ initialJobs }: JobGridProps) {
       const result = await updateJob(updatedJob.id, updatedJob)
 
       if (result.success) {
-        await refreshJobs() // Recargar los trabajos después de actualizar
+        await refreshJobs()
+        router.refresh() // Forzar recarga del router
         toast({
           title: "Success",
           description: result.message,
@@ -89,7 +91,8 @@ export function JobGrid({ initialJobs }: JobGridProps) {
       const result = await deleteJob(jobId)
 
       if (result.success) {
-        await refreshJobs() // Recargar los trabajos después de eliminar
+        await refreshJobs()
+        router.refresh() // Forzar recarga del router
         toast({
           title: "Success",
           description: result.message,
@@ -117,6 +120,11 @@ export function JobGrid({ initialJobs }: JobGridProps) {
       refreshJobs()
     }
   }, [isEditModalOpen])
+
+  // Recargar los trabajos cuando se monta el componente
+  useEffect(() => {
+    refreshJobs()
+  }, [])
 
   if (jobs.length === 0) {
     return (
@@ -176,7 +184,8 @@ export function JobGrid({ initialJobs }: JobGridProps) {
         isOpen={isEditModalOpen}
         onClose={() => {
           setIsEditModalOpen(false)
-          refreshJobs() // Recargar los trabajos cuando se cierra el modal
+          refreshJobs()
+          router.refresh() // Forzar recarga del router
         }}
         onSave={handleSaveJob}
         onDelete={handleDeleteJob}
