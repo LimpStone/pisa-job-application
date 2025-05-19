@@ -22,7 +22,7 @@ jobs:
 
     - name: Deploy to Oracle VM and rebuild Docker container
       run: |
-        ssh ubuntu@TU_IP_PUBLICA << 'EOF'
+        ssh ubuntu@160.34.209.175 << 'EOF'
           cd pisa-job-application
 
           # Opcional: actualizar repositorio
