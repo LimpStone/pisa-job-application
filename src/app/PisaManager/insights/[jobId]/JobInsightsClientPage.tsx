@@ -129,7 +129,11 @@ export default function JobInsightsClientPage({ initialData }: JobInsightsClient
           </Tabs>
         )
       case "location":
-        return <LocationMap jobId={job.id} data={stats.locationStats} />
+        return (
+          <Card className="h-[400px] overflow-hidden">
+            <LocationMap jobId={job.id} data={stats.locationStats} />
+          </Card>
+        )
       default:
         return null
     }

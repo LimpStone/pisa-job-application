@@ -21,8 +21,8 @@ interface LocationMapProps {
 
 export function LocationMap({ jobId, data }: LocationMapProps) {
   return (
-    <Card className="p-4">
-      <div className="h-[400px] bg-gray-50 rounded-lg">
+    <div className="relative w-full h-[calc(100%-1rem)]">
+      <div className="absolute inset-0">
         <ComposableMap 
           projection="geoAlbersUsa"
           projectionConfig={{
@@ -65,7 +65,7 @@ export function LocationMap({ jobId, data }: LocationMapProps) {
           </ZoomableGroup>
         </ComposableMap>
       </div>
-      <div className="mt-4 flex justify-center gap-4">
+      <div className="absolute bottom-4 right-4 bg-white p-2 rounded-lg shadow-md text-sm z-10">
         {["0", "1", "2", "3", "4+"].map((value) => (
           <div key={value} className="flex items-center gap-1">
             <div
@@ -76,6 +76,6 @@ export function LocationMap({ jobId, data }: LocationMapProps) {
           </div>
         ))}
       </div>
-    </Card>
+    </div>
   )
 }

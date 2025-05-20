@@ -3,7 +3,7 @@ import Header from "@/components/ui/header"
 import Footer from "@/components/ui/footer"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { ArrowRight, Briefcase, MapPin, Clock, Building } from "lucide-react"
+import { ArrowRight, Briefcase, MapPin, Clock, Building, Lightbulb, LineChart, CheckCircle } from "lucide-react"
 import { getPublicJobs } from "./actions/public-job-actions"
 import { formatDistanceToNow } from "date-fns"
 
@@ -104,14 +104,7 @@ export default async function Home() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               <div className="text-center p-6 rounded-lg border border-gray-200">
                 <div className="bg-blue-100 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
-                  <svg
-                    className="w-8 h-8 text-blue-600"
-                    fill="currentColor"
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 24 24"
-                  >
-                    <path d="M20 10h-4V4h-2v6h-4v2h4v6h2v-6h4v-2z" />
-                  </svg>
+                  <Lightbulb className="w-8 h-8 text-blue-600" />
                 </div>
                 <h3 className="text-xl font-semibold mb-2">Innovative Culture</h3>
                 <p className="text-gray-600">
@@ -120,14 +113,7 @@ export default async function Home() {
               </div>
               <div className="text-center p-6 rounded-lg border border-gray-200">
                 <div className="bg-blue-100 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
-                  <svg
-                    className="w-8 h-8 text-blue-600"
-                    fill="currentColor"
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 24 24"
-                  >
-                    <path d="M17 3c-2.2 0-4 1.8-4 4 0 .4.1.7.1 1l-7.1 4.2c-.7-.7-1.7-1.2-2.8-1.2C1.5 11 0 12.5 0 14.3s1.5 3.3 3.3 3.3c1.1 0 2.1-.5 2.8-1.2l7.1 4.2c-.1.3-.1.7-.1 1 0 2.2 1.8 4 4 4s4-1.8 4-4-1.8-4-4-4c-1.1 0-2.1.5-2.8 1.2l-7.1-4.2c.1-.3.1-.7.1-1 0-.4-.1-.7-.1-1l7.1-4.2c.7.7 1.7 1.2 2.8 1.2 1.8 0 3.3-1.5 3.3-3.3S18.8 3 17 3z" />
-                  </svg>
+                  <LineChart className="w-8 h-8 text-blue-600" />
                 </div>
                 <h3 className="text-xl font-semibold mb-2">Career Growth</h3>
                 <p className="text-gray-600">
@@ -136,14 +122,7 @@ export default async function Home() {
               </div>
               <div className="text-center p-6 rounded-lg border border-gray-200">
                 <div className="bg-blue-100 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
-                  <svg
-                    className="w-8 h-8 text-blue-600"
-                    fill="currentColor"
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 24 24"
-                  >
-                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
-                  </svg>
+                  <CheckCircle className="w-8 h-8 text-blue-600" />
                 </div>
                 <h3 className="text-xl font-semibold mb-2">Great Benefits</h3>
                 <p className="text-gray-600">
