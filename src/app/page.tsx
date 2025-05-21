@@ -6,6 +6,7 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/componen
 import { ArrowRight, Briefcase, MapPin, Clock, Building, Lightbulb, LineChart, CheckCircle } from "lucide-react"
 import { getPublicJobs } from "./actions/public-job-actions"
 import { formatDistanceToNow } from "date-fns"
+import { Job } from "@prisma/client"
 
 export default async function Home() {
   // Fetch real jobs from the database
@@ -61,7 +62,7 @@ export default async function Home() {
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {featuredJobs.map((job) => (
+                {featuredJobs.map((job: Job) => (
                   <Card key={job.id} className="hover:shadow-md transition-shadow">
                     <CardHeader>
                       <CardTitle className="text-xl">{job.title}</CardTitle>
@@ -82,7 +83,12 @@ export default async function Home() {
                       </div>
                       <div className="flex items-center gap-2 text-gray-600">
                         <Clock className="h-4 w-4 flex-shrink-0" />
-                        <span>Posted {formatDistanceToNow(new Date(job.postedDate), { addSuffix: true })}</span>
+                        <span>
+                          Posted {formatDistanceToNow(new Date(job.postedDate), { 
+                            addSuffix: true,
+                            includeSeconds: false 
+                          })}
+                        </span>
                       </div>
                     </CardContent>
                     <CardFooter>

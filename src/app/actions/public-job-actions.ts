@@ -66,7 +66,7 @@ export async function getAllJobIds() {
       },
     })
 
-    return jobs.map((job) => job.id.toString())
+    return jobs.map((job: { id: number }) => job.id.toString())
   } catch (error) {
     console.error("Error fetching job IDs:", error)
     return []
