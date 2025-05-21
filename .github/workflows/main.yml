@@ -13,6 +13,17 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v3
 
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: 20
+
+    - name: Install dependencies
+      run: npm install
+
+    - name: Run unit tests
+      run: npm test
+
     - name: Set up SSH
       run: |
         mkdir -p ~/.ssh
@@ -20,37 +31,45 @@ jobs:
         chmod 600 ~/.ssh/id_rsa
         ssh-keyscan -H 160.34.209.175 >> ~/.ssh/known_hosts
 
-    - name: Deploy to Oracle VM and rebuild Docker container
+    - name: Deploy to Oracle VM with zero downtime
       run: |
-        ssh ubuntu@160.34.209.175 << EOF
+        ssh ubuntu@160.34.209.175 << 'EOF'
+          set -e
           cd pisa-job-application
-
           git pull origin main
 
-          # Liberar puerto 3000 si está ocupado
-          PORT=3000
-          PID=\$(sudo lsof -t -i:\$PORT)
-          if [ -n "\$PID" ]; then
-            echo "Killing process using port \$PORT: PID \$PID"
-            sudo kill -9 \$PID
-            sleep 2
-          fi
+          echo "Building new Docker image..."
+          sudo docker build -t pisa-job-app .
 
-          # Eliminar contenedor pisa-app si existe
+          echo "Running new container on port 3001..."
+          sudo docker run -d \
+            --name pisa-app-temp \
+            --env-file .env \
+            -p 3001:3000 \
+            pisa-job-app
+
+          echo "Waiting a few seconds for app to initialize..."
+          sleep 5
+
+          echo "Health check (basic):"
+          curl -f http://localhost:3001 || {
+            echo "Health check failed. Aborting deployment."
+            sudo docker rm -f pisa-app-temp
+            exit 1
+          }
+
+          echo "Stopping and removing old container if it exists..."
           if [ \$(sudo docker ps -a -q -f name=pisa-app) ]; then
-            echo "Removing existing pisa-app container..."
             sudo docker rm -f pisa-app
           fi
 
-          # Construir nueva imagen
-          sudo docker build -t pisa-job-app .
-
-          # Ejecutar contenedor
+          echo "Starting new container on port 3000..."
           sudo docker run -d \
             --name pisa-app \
             --env-file .env \
             -p 3000:3000 \
             pisa-job-app
+
+          echo "Removing temporary container..."
+          sudo docker rm -f pisa-app-temp
         EOF
-
-
