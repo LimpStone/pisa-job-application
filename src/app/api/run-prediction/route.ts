@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: true, result })
     } else {
       // Return mock prediction result
-      const mockScore = Math.floor(Math.random() * 30) + 70 // Random score between 70-99
+      const mockScore = -1 // Random score between 70-99
       return NextResponse.json({
         success: true,
         result: {
