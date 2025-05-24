@@ -25,6 +25,10 @@ export function ScoreDistributionChart({ jobId, data, type = "bar" }: ScoreDistr
     setMounted(true)
   }, [])
 
+  // Add debugging
+  console.log("ScoreDistributionChart - Raw data:", data)
+  console.log("ScoreDistributionChart - Applications:", data.applications)
+
   // Create ranges for bar chart
   const ranges = [
     { min: 0, max: 20, label: "0-20" },
@@ -47,6 +51,8 @@ export function ScoreDistributionChart({ jobId, data, type = "bar" }: ScoreDistr
     }
   })
 
+  console.log("Bar chart data:", chartData)
+
   // Group scores and count frequency for line chart
   const scoreFrequencyMap = new Map<number, number>()
 
@@ -56,9 +62,12 @@ export function ScoreDistributionChart({ jobId, data, type = "bar" }: ScoreDistr
       if (!isNaN(score)) {
         const roundedScore = Math.round(score)
         scoreFrequencyMap.set(roundedScore, (scoreFrequencyMap.get(roundedScore) || 0) + 1)
+        console.log(`Added score: ${roundedScore} with count: ${scoreFrequencyMap.get(roundedScore)}`)
       }
     })
   }
+
+  console.log("Score frequency map:", Array.from(scoreFrequencyMap.entries()))
 
   const scatterData = Array.from(scoreFrequencyMap.entries())
     .map(([score, count]) => ({
@@ -67,9 +76,18 @@ export function ScoreDistributionChart({ jobId, data, type = "bar" }: ScoreDistr
     }))
     .sort((a, b) => a.score - b.score)
 
-  // Create a complete dataset with 0 values for missing scores to ensure smooth line
+  console.log("Scatter data:", scatterData)
+
+  // Create line data that includes actual data points and fills gaps with 0
   const completeLineData = []
-  for (let score = 0; score <= 100; score += 5) {
+
+  // Get min and max scores from actual data
+  const scores = scatterData.map((item) => item.score)
+  const minScore = Math.min(0, ...scores)
+  const maxScore = Math.max(100, ...scores)
+
+  // Create data points for every score from 0 to 100
+  for (let score = 0; score <= 100; score += 1) {
     const existingData = scatterData.find((item) => item.score === score)
     completeLineData.push({
       score,
@@ -77,11 +95,16 @@ export function ScoreDistributionChart({ jobId, data, type = "bar" }: ScoreDistr
     })
   }
 
+  console.log("Complete line data (first 10):", completeLineData.slice(0, 10))
+  console.log("Complete line data (around score 76):", completeLineData.slice(74, 78))
+  console.log("Complete line data (around score 96):", completeLineData.slice(94, 98))
+
   // Custom dot component that only renders when count > 0
   const CustomDot = (props: any) => {
     const { cx, cy, payload } = props
     if (payload && typeof payload.count === "number" && payload.count > 0) {
-      return <circle cx={cx} cy={cy} r={4} fill="#8F3BF6FF" stroke="#38188BFF" strokeWidth={2} />
+      console.log("Rendering dot at:", payload.score, "with count:", payload.count)
+      return <circle cx={cx} cy={cy} r={6} fill="#8F3BF6FF" stroke="#38188BFF" strokeWidth={2} />
     }
     return null
   }
@@ -90,7 +113,7 @@ export function ScoreDistributionChart({ jobId, data, type = "bar" }: ScoreDistr
   const CustomActiveDot = (props: any) => {
     const { cx, cy, payload } = props
     if (payload && typeof payload.count === "number" && payload.count > 0) {
-      return <circle cx={cx} cy={cy} r={6} fill="#763BF6FF" stroke="#E6B7FFFF" strokeWidth={2} />
+      return <circle cx={cx} cy={cy} r={8} fill="#763BF6FF" stroke="#E6B7FFFF" strokeWidth={3} />
     }
     return null
   }
@@ -169,7 +192,7 @@ export function ScoreDistributionChart({ jobId, data, type = "bar" }: ScoreDistr
                   ticks={[0, 25, 50, 75, 100]}
                   tickFormatter={(value) => `${value}`}
                 />
-                <YAxis type="number" dataKey="count" allowDecimals={false} />
+                <YAxis type="number" dataKey="count" allowDecimals={false} domain={[0, "dataMax"]} />
                 <Tooltip
                   content={<ChartTooltipContent />}
                   formatter={(value: any, name: string) => [value, name === "count" ? "Applications" : "Score"]}
