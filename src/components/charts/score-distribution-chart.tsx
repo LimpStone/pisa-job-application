@@ -1,5 +1,6 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip, Line, LineChart } from "recharts"
 import { ChartContainer, ChartTooltipContent } from "@/components/ui/chart"
 
@@ -16,10 +17,13 @@ interface ScoreDistributionChartProps {
 }
 
 export function ScoreDistributionChart({ jobId, data, type = "bar" }: ScoreDistributionChartProps) {
-  // Add debugging logs
-  console.log("Chart data received:", data)
-  console.log("Applications array:", data.applications)
-  console.log("Applications length:", data.applications?.length)
+  // Add state to handle client-side rendering for Recharts
+  const [mounted, setMounted] = useState(false)
+
+  // Ensure this only renders on the client side to avoid hydration issues
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   // Create ranges for bar chart
   const ranges = [
@@ -33,7 +37,6 @@ export function ScoreDistributionChart({ jobId, data, type = "bar" }: ScoreDistr
   const chartData = ranges.map((range) => {
     const count =
       data.applications?.filter((app) => {
-        // Add safety checks
         const score = typeof app.score === "number" ? app.score : Number(app.score)
         return !isNaN(score) && score >= range.min && score <= range.max
       }).length || 0
@@ -44,32 +47,18 @@ export function ScoreDistributionChart({ jobId, data, type = "bar" }: ScoreDistr
     }
   })
 
-  console.log("Bar chart data:", chartData)
-
-  // Group scores and count frequency for line chart with better error handling
+  // Group scores and count frequency for line chart
   const scoreFrequencyMap = new Map<number, number>()
 
   if (data.applications && Array.isArray(data.applications)) {
-    data.applications.forEach((app, index) => {
-      try {
-        // Convert score to number and validate
-        const score = typeof app.score === "number" ? app.score : Number(app.score)
-
-        if (isNaN(score)) {
-          console.warn(`Invalid score at index ${index}:`, app.score)
-          return
-        }
-
-        // Round score to nearest integer to avoid floating point issues
+    data.applications.forEach((app) => {
+      const score = typeof app.score === "number" ? app.score : Number(app.score)
+      if (!isNaN(score)) {
         const roundedScore = Math.round(score)
         scoreFrequencyMap.set(roundedScore, (scoreFrequencyMap.get(roundedScore) || 0) + 1)
-      } catch (error) {
-        console.error(`Error processing application at index ${index}:`, error, app)
       }
     })
   }
-
-  console.log("Score frequency map:", Array.from(scoreFrequencyMap.entries()))
 
   const scatterData = Array.from(scoreFrequencyMap.entries())
     .map(([score, count]) => ({
@@ -77,8 +66,6 @@ export function ScoreDistributionChart({ jobId, data, type = "bar" }: ScoreDistr
       count,
     }))
     .sort((a, b) => a.score - b.score)
-
-  console.log("Scatter data:", scatterData)
 
   // Create a complete dataset with 0 values for missing scores to ensure smooth line
   const completeLineData = []
@@ -90,34 +77,22 @@ export function ScoreDistributionChart({ jobId, data, type = "bar" }: ScoreDistr
     })
   }
 
-  console.log("Complete line data sample:", completeLineData.slice(0, 5))
-
   // Custom dot component that only renders when count > 0
   const CustomDot = (props: any) => {
-    try {
-      const { cx, cy, payload } = props
-      if (payload && typeof payload.count === "number" && payload.count > 0) {
-        return <circle cx={cx} cy={cy} r={4} fill="#8F3BF6FF" stroke="#38188BFF" strokeWidth={2} />
-      }
-      return null
-    } catch (error) {
-      console.error("Error in CustomDot:", error)
-      return null
+    const { cx, cy, payload } = props
+    if (payload && typeof payload.count === "number" && payload.count > 0) {
+      return <circle cx={cx} cy={cy} r={4} fill="#8F3BF6FF" stroke="#38188BFF" strokeWidth={2} />
     }
+    return null
   }
 
   // Custom active dot for hover
   const CustomActiveDot = (props: any) => {
-    try {
-      const { cx, cy, payload } = props
-      if (payload && typeof payload.count === "number" && payload.count > 0) {
-        return <circle cx={cx} cy={cy} r={6} fill="#763BF6FF" stroke="#E6B7FFFF" strokeWidth={2} />
-      }
-      return null
-    } catch (error) {
-      console.error("Error in CustomActiveDot:", error)
-      return null
+    const { cx, cy, payload } = props
+    if (payload && typeof payload.count === "number" && payload.count > 0) {
+      return <circle cx={cx} cy={cy} r={6} fill="#763BF6FF" stroke="#E6B7FFFF" strokeWidth={2} />
     }
+    return null
   }
 
   // Add fallback for when there's no data
@@ -126,6 +101,24 @@ export function ScoreDistributionChart({ jobId, data, type = "bar" }: ScoreDistr
       <div className="p-4">
         <div className="h-[300px] flex items-center justify-center border border-gray-200 rounded">
           <p className="text-gray-500">No application data available</p>
+        </div>
+        <div className="text-center mt-4">
+          <p className="text-sm text-gray-500">Average Score: {data.averageScore.toFixed(1)}</p>
+          <p className="text-sm text-gray-500">Total Applications: {data.totalApplications}</p>
+        </div>
+      </div>
+    )
+  }
+
+  // Show loading state until client-side hydration is complete
+  if (!mounted) {
+    return (
+      <div className="p-4">
+        <div className="h-[300px] flex items-center justify-center border border-gray-200 rounded bg-gray-50">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
+            <p className="text-gray-500">Loading chart...</p>
+          </div>
         </div>
         <div className="text-center mt-4">
           <p className="text-sm text-gray-500">Average Score: {data.averageScore.toFixed(1)}</p>
@@ -149,7 +142,7 @@ export function ScoreDistributionChart({ jobId, data, type = "bar" }: ScoreDistr
             className="h-full"
           >
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartData}>
+              <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
                 <XAxis dataKey="score" />
                 <YAxis />
                 <Tooltip content={<ChartTooltipContent />} />
@@ -168,7 +161,7 @@ export function ScoreDistributionChart({ jobId, data, type = "bar" }: ScoreDistr
             className="h-full"
           >
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={completeLineData}>
+              <LineChart data={completeLineData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
                 <XAxis
                   type="number"
                   dataKey="score"
