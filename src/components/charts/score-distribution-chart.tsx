@@ -16,6 +16,11 @@ interface ScoreDistributionChartProps {
 }
 
 export function ScoreDistributionChart({ jobId, data, type = "bar" }: ScoreDistributionChartProps) {
+  // Add debugging logs
+  console.log("Chart data received:", data)
+  console.log("Applications array:", data.applications)
+  console.log("Applications length:", data.applications?.length)
+
   // Create ranges for bar chart
   const ranges = [
     { min: 0, max: 20, label: "0-20" },
@@ -26,7 +31,12 @@ export function ScoreDistributionChart({ jobId, data, type = "bar" }: ScoreDistr
   ]
 
   const chartData = ranges.map((range) => {
-    const count = data.applications?.filter((app) => app.score >= range.min && app.score <= range.max).length || 0
+    const count =
+      data.applications?.filter((app) => {
+        // Add safety checks
+        const score = typeof app.score === "number" ? app.score : Number(app.score)
+        return !isNaN(score) && score >= range.min && score <= range.max
+      }).length || 0
 
     return {
       score: range.label,
@@ -34,11 +44,32 @@ export function ScoreDistributionChart({ jobId, data, type = "bar" }: ScoreDistr
     }
   })
 
-  // Group scores and count frequency for line chart
+  console.log("Bar chart data:", chartData)
+
+  // Group scores and count frequency for line chart with better error handling
   const scoreFrequencyMap = new Map<number, number>()
-  data.applications?.forEach((app) => {
-    scoreFrequencyMap.set(app.score, (scoreFrequencyMap.get(app.score) || 0) + 1)
-  })
+
+  if (data.applications && Array.isArray(data.applications)) {
+    data.applications.forEach((app, index) => {
+      try {
+        // Convert score to number and validate
+        const score = typeof app.score === "number" ? app.score : Number(app.score)
+
+        if (isNaN(score)) {
+          console.warn(`Invalid score at index ${index}:`, app.score)
+          return
+        }
+
+        // Round score to nearest integer to avoid floating point issues
+        const roundedScore = Math.round(score)
+        scoreFrequencyMap.set(roundedScore, (scoreFrequencyMap.get(roundedScore) || 0) + 1)
+      } catch (error) {
+        console.error(`Error processing application at index ${index}:`, error, app)
+      }
+    })
+  }
+
+  console.log("Score frequency map:", Array.from(scoreFrequencyMap.entries()))
 
   const scatterData = Array.from(scoreFrequencyMap.entries())
     .map(([score, count]) => ({
@@ -47,10 +78,11 @@ export function ScoreDistributionChart({ jobId, data, type = "bar" }: ScoreDistr
     }))
     .sort((a, b) => a.score - b.score)
 
+  console.log("Scatter data:", scatterData)
+
   // Create a complete dataset with 0 values for missing scores to ensure smooth line
   const completeLineData = []
   for (let score = 0; score <= 100; score += 5) {
-    // Every 5 points for smoother line
     const existingData = scatterData.find((item) => item.score === score)
     completeLineData.push({
       score,
@@ -58,22 +90,49 @@ export function ScoreDistributionChart({ jobId, data, type = "bar" }: ScoreDistr
     })
   }
 
+  console.log("Complete line data sample:", completeLineData.slice(0, 5))
+
   // Custom dot component that only renders when count > 0
   const CustomDot = (props: any) => {
-    const { cx, cy, payload } = props
-    if (payload.count > 0) {
-      return <circle cx={cx} cy={cy} r={4} fill="#8F3BF6FF" stroke="#38188BFF" strokeWidth={2} />
+    try {
+      const { cx, cy, payload } = props
+      if (payload && typeof payload.count === "number" && payload.count > 0) {
+        return <circle cx={cx} cy={cy} r={4} fill="#8F3BF6FF" stroke="#38188BFF" strokeWidth={2} />
+      }
+      return null
+    } catch (error) {
+      console.error("Error in CustomDot:", error)
+      return null
     }
-    return null
   }
 
   // Custom active dot for hover
   const CustomActiveDot = (props: any) => {
-    const { cx, cy, payload } = props
-    if (payload.count > 0) {
-      return <circle cx={cx} cy={cy} r={6} fill="#763BF6FF" stroke="#E6B7FFFF" strokeWidth={2} />
+    try {
+      const { cx, cy, payload } = props
+      if (payload && typeof payload.count === "number" && payload.count > 0) {
+        return <circle cx={cx} cy={cy} r={6} fill="#763BF6FF" stroke="#E6B7FFFF" strokeWidth={2} />
+      }
+      return null
+    } catch (error) {
+      console.error("Error in CustomActiveDot:", error)
+      return null
     }
-    return null
+  }
+
+  // Add fallback for when there's no data
+  if (!data.applications || data.applications.length === 0) {
+    return (
+      <div className="p-4">
+        <div className="h-[300px] flex items-center justify-center border border-gray-200 rounded">
+          <p className="text-gray-500">No application data available</p>
+        </div>
+        <div className="text-center mt-4">
+          <p className="text-sm text-gray-500">Average Score: {data.averageScore.toFixed(1)}</p>
+          <p className="text-sm text-gray-500">Total Applications: {data.totalApplications}</p>
+        </div>
+      </div>
+    )
   }
 
   return (
