@@ -3,8 +3,6 @@ import { type NextRequest, NextResponse } from "next/server"
 export async function POST(request: NextRequest) {
   try {
     const data = await request.json()
-    console.log("Received prediction request:", data)
-
     // Get the FastAPI URL from environment variables or use default
     const fastApiUrl = process.env.FASTAPI_URL || "http://localhost:8000"
     const predictionEndpoint = `${fastApiUrl}/predict`
@@ -19,9 +17,9 @@ export async function POST(request: NextRequest) {
         body: JSON.stringify(data),
       })
 
+
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ detail: "Unknown error" }))
-        console.error("FastAPI error:", errorData)
         return NextResponse.json(
           { 
             success: false, 
@@ -32,27 +30,20 @@ export async function POST(request: NextRequest) {
       }
 
       const result = await response.json()
-      console.log("FastAPI response:", result)
-
       return NextResponse.json(result)
     } catch (fetchError) {
-      console.error("Error connecting to FastAPI:", fetchError)
-      
-      // Fallback to mock prediction if FastAPI is not available
-      console.warn("FastAPI not available, using mock prediction")
       const mockScore = -1 
-      
-      return NextResponse.json({
+      const fallbackResponse = {
         success: true,
         result: {
           applicationId: data.applicationId,
           score: mockScore,
         },
         warning: "Using mock prediction - FastAPI service not available"
-      })
+      }
+      return NextResponse.json(fallbackResponse)
     }
   } catch (error) {
-    console.error("Error in prediction route:", error)
     return NextResponse.json(
       { 
         success: false, 

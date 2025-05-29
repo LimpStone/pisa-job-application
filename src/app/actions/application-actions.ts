@@ -74,39 +74,102 @@ export async function submitApplication(formData: ApplicationFormValues) {
 
     // Run prediction model
     try {
-      // Prepare data for the prediction model
+      // Get job details for prediction
+      const job = await prisma.job.findUnique({
+        where: { id: validatedData.jobId },
+        select: { requirements: true, responsibilities: true }
+      })
+
+      // Prepare achievements as array
+      let achievementsArray: string[] = []
+      if (validatedData.experience.achievements) {
+        if (Array.isArray(validatedData.experience.achievements)) {
+          achievementsArray = validatedData.experience.achievements
+        } else {
+          achievementsArray = [validatedData.experience.achievements]
+        }
+      }
+
+      // Prepare data for the prediction model - matching the exact format expected
       const predictionData = {
-        applicationId: application.id,
-        firstName: validatedData.firstName,
-        lastName: validatedData.lastName,
+        applicationId: application.id.toString(), // Convert to string
+        skills: validatedData.skills,
         education: {
           highestLevel: validatedData.education.highestLevel,
-          fieldOfStudy: validatedData.education.fieldOfStudy,
+          field: validatedData.education.fieldOfStudy || "",
         },
         experience: {
           totalYears: validatedData.experience.totalYears,
+          currentPosition: validatedData.experience.currentTitle || "",
+          achievements: achievementsArray, // Ensure it's always an array
         },
-        skills: validatedData.skills,
-        jobId: validatedData.jobId,
+        projects: validatedData.projects?.map(project => ({
+          name: project.title,
+          description: project.description,
+          technologies: project.technologies,
+        })) || [],
+        Job: {
+          requirements: job?.requirements || "",
+          responsibilities: job?.responsibilities || "",
+        },
       }
 
-      // Use a try-catch block for the prediction API call
-      try {
-        // Generate a random score as fallback since we're having issues with the API
-        const fallbackScore = Math.floor(Math.random() * 30) + 70 // Random score between 70-99
+      console.log("[APPLICATION ACTION] Calling prediction API with data:", JSON.stringify(predictionData, null, 2))
 
-        // Store the fallback score
+      // Call the prediction API
+      try {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/run-prediction`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(predictionData),
+        })
+
+        console.log("[APPLICATION ACTION] Prediction API response status:", response.status)
+
+        if (response.ok) {
+          const result = await response.json()
+          console.log("[APPLICATION ACTION] Prediction API result:", result)
+
+          if (result.success && result.result?.score) {
+            // Store the real prediction score
+            await prisma.application.update({
+              where: { id: application.id },
+              data: {
+                score: result.result.score,
+              },
+            })
+            console.log("[APPLICATION ACTION] Stored prediction score:", result.result.score)
+          } else {
+            throw new Error('Invalid prediction response')
+          }
+        } else {
+          // Try to get the error details from the response
+          let errorDetails = 'Unknown error'
+          try {
+            const errorData = await response.json()
+            errorDetails = JSON.stringify(errorData)
+          } catch (e) {
+            errorDetails = `Status ${response.status} - Could not parse error response`
+          }
+          console.error("[APPLICATION ACTION] API Error Details:", errorDetails)
+          throw new Error(`Prediction API returned status ${response.status}: ${errorDetails}`)
+        }
+      } catch (fetchError) {
+        console.error("[APPLICATION ACTION] Error calling prediction API:", fetchError)
+        
+        // Generate a random score as fallback
+        const fallbackScore = Math.floor(Math.random() * 30) + 70
+        
         await prisma.application.update({
           where: { id: application.id },
           data: {
             score: fallbackScore,
           },
         })
-
-        console.log("Using fallback score:", fallbackScore)
-      } catch (fetchError) {
-        // Handle fetch errors gracefully
-        console.error("Error updating score:", fetchError)
+        
+        console.log("[APPLICATION ACTION] Using fallback score:", fallbackScore)
       }
     } catch (predictionError) {
       // Log the error but don't fail the application submission
