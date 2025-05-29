@@ -8,12 +8,28 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { CandidateList } from "@/components/candidate-list"
-import { ScoreDistributionChart } from "@/components/charts/score-distribution-chart"
 import { EducationPieChart } from "@/components/charts/education-pie-chart"
 import { SkillsBarChart } from "@/components/charts/skills-bar-chart"
 import { LocationMap } from "@/components/charts/location-map"
 import { ExperienceChart } from "@/components/charts/experience-chart"
 import { getJobApplications } from "@/app/actions/job-actions"
+import dynamic from "next/dynamic"
+
+// Dynamically import the chart to avoid SSR issues
+const ScoreDistributionChart = dynamic(
+  () => import("@/components/charts/score-distribution-chart").then((mod) => ({ default: mod.ScoreDistributionChart })),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-[300px] flex items-center justify-center border border-gray-200 rounded bg-gray-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
+          <p className="text-gray-500">Loading chart...</p>
+        </div>
+      </div>
+    ),
+  },
+)
 
 interface JobInsightsClientPageProps {
   initialData: {
@@ -40,11 +56,17 @@ export default function JobInsightsClientPage({ initialData }: JobInsightsClient
   const params = useParams()
   const [chartMetric, setChartMetric] = useState("score")
   const [applications, setApplications] = useState<any[]>([])
+  const [isClient, setIsClient] = useState(false)
+
+  // Ensure we're on the client side
+  useEffect(() => {
+    setIsClient(true)
+  }, [])
 
   useEffect(() => {
     const loadApplications = async () => {
       try {
-        const jobId = parseInt(params.jobId as string)
+        const jobId = Number.parseInt(params.jobId as string)
         const apps = await getJobApplications(jobId)
         setApplications(apps)
       } catch (error) {
@@ -52,12 +74,29 @@ export default function JobInsightsClientPage({ initialData }: JobInsightsClient
       }
     }
 
-    loadApplications()
-  }, [params.jobId])
+    if (isClient) {
+      loadApplications()
+    }
+  }, [params.jobId, isClient])
 
   const { job, stats } = initialData
 
+  // Add debugging for the stats data
+  console.log("Stats data in JobInsightsClientPage:", stats)
+  console.log("Applications in stats:", stats.applications)
+
   const renderVisualization = () => {
+    if (!isClient) {
+      return (
+        <div className="h-[300px] flex items-center justify-center border border-gray-200 rounded bg-gray-50">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
+            <p className="text-gray-500">Loading visualization...</p>
+          </div>
+        </div>
+      )
+    }
+
     switch (chartMetric) {
       case "score":
         return (
@@ -71,12 +110,20 @@ export default function JobInsightsClientPage({ initialData }: JobInsightsClient
               <ScoreDistributionChart jobId={job.id} data={stats} type="bar" />
             </TabsContent>
             <TabsContent value="pie" className="pt-4">
-              <EducationPieChart jobId={job.id} data={stats.applications?.reduce((acc, app) => {
-                const range = Math.floor(app.score / 20) * 20
-                const key = `${range}-${range + 19}`
-                acc[key] = (acc[key] || 0) + 1
-                return acc
-              }, {} as Record<string, number>) || {}} />
+              <EducationPieChart
+                jobId={job.id}
+                data={
+                  stats.applications?.reduce(
+                    (acc, app) => {
+                      const range = Math.floor(app.score / 20) * 20
+                      const key = `${range}-${range + 19}`
+                      acc[key] = (acc[key] || 0) + 1
+                      return acc
+                    },
+                    {} as Record<string, number>,
+                  ) || {}
+                }
+              />
             </TabsContent>
             <TabsContent value="distribution" className="pt-4">
               <ScoreDistributionChart jobId={job.id} data={stats} type="dot" />
@@ -171,9 +218,7 @@ export default function JobInsightsClientPage({ initialData }: JobInsightsClient
                 </SelectContent>
               </Select>
             </CardHeader>
-            <CardContent>
-              {renderVisualization()}
-            </CardContent>
+            <CardContent>{renderVisualization()}</CardContent>
           </Card>
 
           <Card>
@@ -181,7 +226,7 @@ export default function JobInsightsClientPage({ initialData }: JobInsightsClient
               <CardTitle className="text-lg font-medium">Top Skills</CardTitle>
             </CardHeader>
             <CardContent>
-              <SkillsBarChart jobId={job.id} data={stats.skillsStats} limit={5} />
+              {isClient && <SkillsBarChart jobId={job.id} data={stats.skillsStats} limit={5} />}
             </CardContent>
           </Card>
         </div>
@@ -198,7 +243,7 @@ export default function JobInsightsClientPage({ initialData }: JobInsightsClient
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <CandidateList jobId={job.id}/>
+              <CandidateList jobId={job.id} />
             </CardContent>
           </Card>
         </div>
