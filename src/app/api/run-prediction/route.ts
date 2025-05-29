@@ -1,67 +1,64 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { exec } from "child_process"
-import { promisify } from "util"
-import { appConfig } from "@/config/app-config"
-import fs from "fs"
-
-const execPromise = promisify(exec)
 
 export async function POST(request: NextRequest) {
   try {
     const data = await request.json()
     console.log("Received prediction request:", data)
 
-    // For development/testing, if the Python script doesn't exist or can't be executed,
-    // return a mock prediction result
-    const scriptPath = appConfig.pythonScriptPath
-    let scriptExists = false
+    // Get the FastAPI URL from environment variables or use default
+    const fastApiUrl = process.env.FASTAPI_URL || "http://localhost:8000"
+    const predictionEndpoint = `${fastApiUrl}/predict`
 
     try {
-      // Check if the script exists
-      await fs.promises.access(scriptPath)
-      scriptExists = true
-    } catch (error) {
-      console.warn(`Python script not found at ${scriptPath}. Using mock prediction.`)
-    }
+      // Make request to FastAPI prediction service
+      const response = await fetch(predictionEndpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+      })
 
-    if (scriptExists) {
-      // Create a JSON string to pass to the Python script
-      const jsonData = JSON.stringify(data)
-
-      // Execute the Python script with the application data
-      const { stdout, stderr } = await execPromise(`python ${scriptPath} '${jsonData}'`)
-
-      if (stderr) {
-        console.error("Python script error:", stderr)
-        return NextResponse.json({ success: false, error: stderr }, { status: 500 })
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ detail: "Unknown error" }))
+        console.error("FastAPI error:", errorData)
+        return NextResponse.json(
+          { 
+            success: false, 
+            error: errorData.detail || `FastAPI returned status ${response.status}` 
+          }, 
+          { status: 500 }
+        )
       }
 
-      // Parse the output from the Python script
-      let result
-      try {
-        result = JSON.parse(stdout)
-      } catch (e) {
-        console.error("Error parsing Python script output:", e, "Raw output:", stdout)
-        return NextResponse.json({ success: false, error: "Invalid output from prediction script" }, { status: 500 })
-      }
+      const result = await response.json()
+      console.log("FastAPI response:", result)
 
-      return NextResponse.json({ success: true, result })
-    } else {
-      // Return mock prediction result
-      const mockScore = -1 // Random score between 70-99
+      return NextResponse.json(result)
+    } catch (fetchError) {
+      console.error("Error connecting to FastAPI:", fetchError)
+      
+      // Fallback to mock prediction if FastAPI is not available
+      console.warn("FastAPI not available, using mock prediction")
+      const mockScore = -1 
+      
       return NextResponse.json({
         success: true,
         result: {
           applicationId: data.applicationId,
           score: mockScore,
         },
+        warning: "Using mock prediction - FastAPI service not available"
       })
     }
   } catch (error) {
-    console.error("Error running prediction:", error)
+    console.error("Error in prediction route:", error)
     return NextResponse.json(
-      { success: false, error: error instanceof Error ? error.message : "Unknown error" },
-      { status: 500 },
+      { 
+        success: false, 
+        error: error instanceof Error ? error.message : "Unknown error" 
+      },
+      { status: 500 }
     )
   }
 }
