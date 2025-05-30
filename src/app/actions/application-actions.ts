@@ -160,7 +160,7 @@ export async function submitApplication(formData: ApplicationFormValues) {
         console.error("[APPLICATION ACTION] Error calling prediction API:", fetchError)
         
         // Generate a random score as fallback
-        const fallbackScore = Math.floor(Math.random() * 30) + 70
+        const fallbackScore = -1
         
         await prisma.application.update({
           where: { id: application.id },
