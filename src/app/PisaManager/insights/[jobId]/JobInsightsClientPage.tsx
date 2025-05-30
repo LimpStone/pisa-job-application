@@ -81,7 +81,7 @@ export default function JobInsightsClientPage({ initialData }: JobInsightsClient
 
   const { job, stats } = initialData
 
-  // Add debugging for the stats data
+  // Add debugging for the stats data test
   console.log("Stats data in JobInsightsClientPage:", stats)
   console.log("Applications in stats:", stats.applications)
 
