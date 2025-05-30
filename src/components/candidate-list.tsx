@@ -143,7 +143,7 @@ export function CandidateList({ jobId }: CandidateListProps) {
                     </div>
                     <div>
                       <div className="text-xs text-gray-500">Experience</div>
-                      <div className="text-sm">{candidate.experience[0]?.totalYears || "N/A"} years</div>
+                      <div className="text-sm">{candidate.experience[0]?.totalYears || "N/A"}</div>
                     </div>
                   </div>
                   <div>
