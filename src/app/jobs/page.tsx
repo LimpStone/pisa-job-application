@@ -7,6 +7,10 @@ import { Building, MapPin, Briefcase, Clock } from "lucide-react"
 import { getPublicJobs } from "../actions/public-job-actions"
 import { formatDistanceToNow } from "date-fns"
 
+// Forzar renderizado dinámico para evitar cache en producción
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 export default async function JobsPage() {
   const { success, jobs, error } = await getPublicJobs()
 
@@ -78,4 +82,4 @@ export default async function JobsPage() {
       <Footer />
     </div>
   )
-} 
+}

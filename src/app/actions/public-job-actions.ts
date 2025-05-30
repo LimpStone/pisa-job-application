@@ -1,8 +1,10 @@
 "use server"
 
 import { prisma } from "@/lib/prisma"
+import { unstable_noStore as noStore } from 'next/cache'
 
 export async function getPublicJobs() {
+  noStore() // Prevenir cache de esta función
   try {
     const jobs = await prisma.job.findMany({
       orderBy: {
