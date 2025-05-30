@@ -4,7 +4,10 @@ import { z } from "zod"
 export const projectSchema = z.object({
   title: z.string().min(1, "Project title is required"),
   description: z.string().min(1, "Project description is required"),
-  technologies: z.string().min(1, "Technologies used is required"),
+  technologies: z.union([
+    z.string().min(1, "Technologies used is required"),
+    z.array(z.string()).min(1, "Technologies used is required")
+  ]),
 })
 
 // Define the education schema to match Prisma Education model

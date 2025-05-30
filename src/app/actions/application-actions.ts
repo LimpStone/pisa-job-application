@@ -60,7 +60,9 @@ export async function submitApplication(formData: ApplicationFormValues) {
             validatedData.projects?.map((project) => ({
               title: project.title,
               description: project.description,
-              technologies: project.technologies,
+              technologies: Array.isArray(project.technologies) 
+                ? project.technologies.join(', ') 
+                : project.technologies,
             })) || [],
         },
       },
@@ -106,7 +108,9 @@ export async function submitApplication(formData: ApplicationFormValues) {
         projects: validatedData.projects?.map(project => ({
           name: project.title,
           description: project.description,
-          technologies: project.technologies,
+          technologies: Array.isArray(project.technologies) 
+            ? project.technologies 
+            : project.technologies.split(',').map((tech: string) => tech.trim()).filter((tech: string) => tech),
         })) || [],
         Job: {
           requirements: job?.requirements || "",

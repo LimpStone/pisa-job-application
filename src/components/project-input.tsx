@@ -31,7 +31,14 @@ export default function ProjectInput({ projects, setProjects }: ProjectInputProp
   }
 
   const openEditDialog = (project: ProjectValues, index: number) => {
-    setCurrentProject({ ...project })
+    // Convertir array de technologies de vuelta a string para edición
+    const projectForEdit = {
+      ...project,
+      technologies: Array.isArray(project.technologies) 
+        ? project.technologies.join(', ') 
+        : project.technologies
+    }
+    setCurrentProject(projectForEdit)
     setEditIndex(index)
     setErrors({})
     setIsDialogOpen(true)
@@ -66,12 +73,20 @@ export default function ProjectInput({ projects, setProjects }: ProjectInputProp
   const handleSave = () => {
     if (!validateProject() || !currentProject) return
 
+    // Convertir technologies de string a array para el API
+    const projectToSave = {
+      ...currentProject,
+      technologies: typeof currentProject.technologies === 'string' 
+        ? currentProject.technologies.split(',').map((tech: string) => tech.trim()).filter((tech: string) => tech)
+        : currentProject.technologies
+    }
+
     if (editIndex !== null) {
       const updatedProjects = [...projects]
-      updatedProjects[editIndex] = currentProject
+      updatedProjects[editIndex] = projectToSave
       setProjects(updatedProjects)
     } else {
-      setProjects([...projects, currentProject])
+      setProjects([...projects, projectToSave])
     }
 
     setIsDialogOpen(false)
@@ -105,7 +120,11 @@ export default function ProjectInput({ projects, setProjects }: ProjectInputProp
                     {project.description && <p className="text-sm text-gray-600">{project.description}</p>}
                     {project.technologies && (
                       <p className="text-xs text-gray-500">
-                        <span className="font-medium">Technologies:</span> {project.technologies}
+                        <span className="font-medium">Technologies:</span> {
+                          Array.isArray(project.technologies) 
+                            ? project.technologies.join(', ') 
+                            : project.technologies
+                        }
                       </p>
                     )}
                   </div>
