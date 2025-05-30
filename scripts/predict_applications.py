@@ -193,12 +193,16 @@ def getFinalResult(pred_vector, prob_vector):
     1: 67,
     2: 100
     }
+    
+    """
+    # Lógica para determinar la clase final basada en las probabilidades pero recientemente funciona mejor con la clase predicha directamente
     if pred_vector[0] == 0 and (prob_vector[0][2]+0.05 >= prob_vector[0][0]):
         print(prob_vector[0],"probs")
         pred_class = 2
     else:
         pred_class = pred_vector[0]
-        
+    """  
+    pred_class = pred_vector[0]    
     pred_prob = prob_vector[0][pred_class]
     if pred_class == 0:
         return labels[0] * pred_prob  # no hay clase anterior, escala normal
