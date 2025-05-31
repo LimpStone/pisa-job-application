@@ -323,7 +323,7 @@ def predict_application_score(application_data: ApplicationData):
         # Concatenar todo
         df_sim = pd.concat([df_sim, df_job, df_certs, df_edu, df_exp], axis=1)
         probs = predictModel.predict_proba(df_sim)
-        pred = predictModel.predict(df_sim)
+        pred = predictModel.predict(df_sim)#
         return {
             "applicationId": application_data.applicationId,
             "score": round(getFinalResult(pred,probs)),
