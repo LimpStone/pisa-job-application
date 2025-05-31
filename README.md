@@ -73,7 +73,7 @@ Before running this application, make sure you have the following installed:
 
 1. **Clone the repository**
 ```bash
-git clone <repository-url>
+git clone <https://github.com/LimpStone/pisa-job-application.git>
 cd pisa-job-application
 ```
 
@@ -97,8 +97,6 @@ DATABASE_URL="postgresql://username:password@localhost:5432/pisa_db"
 FASTAPI_URL=http://localhost:8000
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 
-# Optional: External APIs
-OPENAI_API_KEY=your_openai_key_here
 ```
 
 5. **Set up the database**

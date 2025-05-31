@@ -326,7 +326,8 @@ def predict_application_score(application_data: ApplicationData):
         pred = predictModel.predict(df_sim)
         return {
             "applicationId": application_data.applicationId,
-            "score": round(getFinalResult(pred,probs))
+            "score": round(getFinalResult(pred,probs)),
+            "probabilities": probs.tolist(),
         }
     except Exception as e:
         raise Exception(f"Error en la predicción: {str(e)}")
@@ -335,7 +336,7 @@ def predict_application_score(application_data: ApplicationData):
 async def predict(application_data: ApplicationData):
     try:
         score = predict_application_score(application_data)
-        return {"success": True, "result": score}
+        return {"success": True, "result": score, }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

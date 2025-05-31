@@ -30,12 +30,13 @@ jobs:
         echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
         chmod 600 ~/.ssh/id_rsa
         ssh-keyscan -H 160.34.209.175 >> ~/.ssh/known_hosts
-    - name: Deploy to Oracle VM and rebuild Docker container
+    - name: Deploy to Oracle VM and rebuild Docker containers
       run: |
         ssh ubuntu@160.34.209.175 << EOF
           cd pisa-job-application
           git pull origin main
-          # Liberar puerto 3000 si está ocupado
+          
+          # Liberar puerto 3000 si está ocupado (Frontend)
           PORT=3000
           PID=\$(sudo lsof -t -i:\$PORT)
           if [ -n "\$PID" ]; then
@@ -43,18 +44,47 @@ jobs:
             sudo kill -9 \$PID
             sleep 2
           fi
-          # Eliminar contenedor pisa-app si existe
+          
+          # Liberar puerto 8000 si está ocupado (API)
+          PORT=8000
+          PID=\$(sudo lsof -t -i:\$PORT)
+          if [ -n "\$PID" ]; then
+            echo "Killing process using port \$PORT: PID \$PID"
+            sudo kill -9 \$PID
+            sleep 2
+          fi
+          
+          # Eliminar contenedor pisa-app si existe (Frontend)
           if [ \$(sudo docker ps -a -q -f name=pisa-app) ]; then
             echo "Removing existing pisa-app container..."
             sudo docker rm -f pisa-app
           fi
-          # Construir nueva imagen
+          
+          # Eliminar contenedor pisa-api si existe (API)
+          if [ \$(sudo docker ps -a -q -f name=pisa-api) ]; then
+            echo "Removing existing pisa-api container..."
+            sudo docker rm -f pisa-api
+          fi
+          
+          # Construir y ejecutar Frontend
+          echo "Building and deploying Frontend..."
           sudo docker build -t pisa-job-app .
-          # Ejecutar contenedor
           sudo docker run -d \
             --name pisa-app \
             --env-file .env \
             -p 3000:3000 \
             pisa-job-app
+          
+          # Construir y ejecutar API
+          echo "Building and deploying API..."
+          sudo docker build -f Dockerfile.fastapi -t pisa-api .
+          sudo docker run -d \
+            --name pisa-api \
+            --env-file .env \
+            -p 8000:8000 \
+            pisa-api
+          
+          # Verificar que los contenedores estén corriendo
+          echo "Checking container status..."
+          sudo docker ps | grep pisa
         EOF
-
