@@ -64,9 +64,26 @@ jobs:
             sleep 2
           fi
           
-          # Eliminar TODOS los contenedores relacionados (nombres antiguos y nuevos)
-          echo "Removing ALL related containers..."
-          sudo docker rm -f pisa-app pisa-app-v2 fastapi-service fastapi-service-v2 2>/dev/null || true
+          # Eliminar TODOS los contenedores que usen los puertos 8000 y 3000
+          echo "Finding and removing containers using ports 8000 and 3000..."
+          
+          # Encontrar y eliminar contenedores usando puerto 8000
+          PORT_8000_CONTAINERS=\$(sudo docker ps -q --filter "publish=8000")
+          if [ -n "\$PORT_8000_CONTAINERS" ]; then
+            echo "Removing containers using port 8000: \$PORT_8000_CONTAINERS"
+            sudo docker rm -f \$PORT_8000_CONTAINERS
+          fi
+          
+          # Encontrar y eliminar contenedores usando puerto 3000
+          PORT_3000_CONTAINERS=\$(sudo docker ps -q --filter "publish=3000")
+          if [ -n "\$PORT_3000_CONTAINERS" ]; then
+            echo "Removing containers using port 3000: \$PORT_3000_CONTAINERS"
+            sudo docker rm -f \$PORT_3000_CONTAINERS
+          fi
+          
+          # Eliminar contenedores por nombre también (incluyendo my-fastapi-app)
+          echo "Removing containers by name..."
+          sudo docker rm -f pisa-app pisa-app-v2 fastapi-service fastapi-service-v2 my-fastapi-app 2>/dev/null || true
           
           # Eliminar imágenes existentes para forzar rebuild completo
           echo "Removing existing Docker images..."
