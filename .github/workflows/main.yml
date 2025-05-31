@@ -36,6 +36,12 @@ jobs:
           cd pisa-job-application
           git pull origin main
           
+          # Detener todos los servicios de docker-compose si existen
+          if [ -f docker-compose.yml ]; then
+            echo "Stopping docker-compose services..."
+            sudo docker-compose down 2>/dev/null || true
+          fi
+          
           # Liberar puerto 3000 si está ocupado (Next.js)
           PORT=3000
           PID=\$(sudo lsof -t -i:\$PORT)
