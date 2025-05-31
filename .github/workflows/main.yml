@@ -70,17 +70,26 @@ jobs:
             sudo docker rm -f fastapi-service
           fi
           
-          # Construir y ejecutar FastAPI
-          echo "Building FastAPI container..."
-          sudo docker build -t pisa-fastapi-app -f Dockerfile.fastapi .
+          # Eliminar imágenes existentes para forzar rebuild completo
+          echo "Removing existing Docker images..."
+          sudo docker rmi pisa-fastapi-app 2>/dev/null || true
+          sudo docker rmi pisa-job-app 2>/dev/null || true
+          
+          # Limpiar caché de Docker para asegurar build desde cero
+          echo "Cleaning Docker cache..."
+          sudo docker builder prune -f 2>/dev/null || true
+          
+          # Construir y ejecutar FastAPI (sin caché)
+          echo "Building FastAPI container from scratch..."
+          sudo docker build --no-cache -t pisa-fastapi-app -f Dockerfile.fastapi .
           sudo docker run -d \
             --name fastapi-service \
             -p 8000:8000 \
             pisa-fastapi-app
           
-          # Construir y ejecutar Next.js
-          echo "Building Next.js container..."
-          sudo docker build -t pisa-job-app .
+          # Construir y ejecutar Next.js (sin caché)
+          echo "Building Next.js container from scratch..."
+          sudo docker build --no-cache -t pisa-job-app .
           sudo docker run -d \
             --name pisa-app \
             --env-file .env \
