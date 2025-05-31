@@ -17,7 +17,7 @@ import joblib
 app = FastAPI(
     title="PISA Job Application Predictor",
     description="API to predict job application scores",
-    version="1.0.0"
+    version="1.0.1"
 )
 
 # Cargar el modelo de embeddings una sola vez al iniciar
@@ -327,7 +327,7 @@ def predict_application_score(application_data: ApplicationData):
         return {
             "applicationId": application_data.applicationId,
             "score": round(getFinalResult(pred,probs)),
-            "probabilities": probs.tolist(),
+            "": probs.tolist(),
         }
     except Exception as e:
         raise Exception(f"Error en la predicción: {str(e)}")

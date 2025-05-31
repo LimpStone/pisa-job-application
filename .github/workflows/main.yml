@@ -30,12 +30,13 @@ jobs:
         echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
         chmod 600 ~/.ssh/id_rsa
         ssh-keyscan -H 160.34.209.175 >> ~/.ssh/known_hosts
-    - name: Deploy to Oracle VM and rebuild Docker container
+    - name: Deploy to Oracle VM and rebuild Docker containers
       run: |
         ssh ubuntu@160.34.209.175 << EOF
           cd pisa-job-application
           git pull origin main
-          # Liberar puerto 3000 si está ocupado
+          
+          # Liberar puerto 3000 si está ocupado (Next.js)
           PORT=3000
           PID=\$(sudo lsof -t -i:\$PORT)
           if [ -n "\$PID" ]; then
@@ -43,18 +44,40 @@ jobs:
             sudo kill -9 \$PID
             sleep 2
           fi
-          # Eliminar contenedor pisa-app si existe
+          
+          # Liberar puerto 8000 si está ocupado (FastAPI)
+          PORT=8000
+          PID=\$(sudo lsof -t -i:\$PORT)
+          if [ -n "\$PID" ]; then
+            echo "Killing process using port \$PORT: PID \$PID"
+            sudo kill -9 \$PID
+            sleep 2
+          fi
+          
+          # Eliminar contenedores existentes
           if [ \$(sudo docker ps -a -q -f name=pisa-app) ]; then
             echo "Removing existing pisa-app container..."
             sudo docker rm -f pisa-app
           fi
-          # Construir nueva imagen
+          if [ \$(sudo docker ps -a -q -f name=fastapi-service) ]; then
+            echo "Removing existing fastapi-service container..."
+            sudo docker rm -f fastapi-service
+          fi
+          
+          # Construir y ejecutar FastAPI
+          echo "Building FastAPI container..."
+          sudo docker build -t pisa-fastapi-app -f Dockerfile.fastapi .
+          sudo docker run -d \
+            --name fastapi-service \
+            -p 8000:8000 \
+            pisa-fastapi-app
+          
+          # Construir y ejecutar Next.js
+          echo "Building Next.js container..."
           sudo docker build -t pisa-job-app .
-          # Ejecutar contenedor
           sudo docker run -d \
             --name pisa-app \
             --env-file .env \
             -p 3000:3000 \
             pisa-job-app
         EOF
-
