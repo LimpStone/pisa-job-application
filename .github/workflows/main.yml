@@ -36,6 +36,10 @@ jobs:
           cd pisa-job-application
           git pull origin main
           
+          # Mostrar contenedores actuales para debugging
+          echo "Current running containers before cleanup:"
+          sudo docker ps -a
+          
           # Detener todos los servicios de docker-compose si existen
           if [ -f docker-compose.yml ]; then
             echo "Stopping docker-compose services..."
@@ -60,39 +64,49 @@ jobs:
             sleep 2
           fi
           
-          # Eliminar contenedores existentes
-          if [ \$(sudo docker ps -a -q -f name=pisa-app) ]; then
-            echo "Removing existing pisa-app container..."
-            sudo docker rm -f pisa-app
-          fi
-          if [ \$(sudo docker ps -a -q -f name=fastapi-service) ]; then
-            echo "Removing existing fastapi-service container..."
-            sudo docker rm -f fastapi-service
-          fi
+          # Eliminar TODOS los contenedores relacionados (nombres antiguos y nuevos)
+          echo "Removing ALL related containers..."
+          sudo docker rm -f pisa-app pisa-app-v2 fastapi-service fastapi-service-v2 2>/dev/null || true
           
           # Eliminar imágenes existentes para forzar rebuild completo
           echo "Removing existing Docker images..."
-          sudo docker rmi pisa-fastapi-app 2>/dev/null || true
-          sudo docker rmi pisa-job-app 2>/dev/null || true
+          sudo docker rmi pisa-fastapi-app pisa-fastapi-app-v2 pisa-job-app pisa-job-app-v2 2>/dev/null || true
           
           # Limpiar caché de Docker para asegurar build desde cero
           echo "Cleaning Docker cache..."
           sudo docker builder prune -f 2>/dev/null || true
           
-          # Construir y ejecutar FastAPI (sin caché)
+          # Construir y ejecutar FastAPI (sin caché) - NUEVO NOMBRE
           echo "Building FastAPI container from scratch..."
-          sudo docker build --no-cache -t pisa-fastapi-app -f Dockerfile.fastapi .
+          sudo docker build --no-cache -t pisa-fastapi-app-v2 -f Dockerfile.fastapi .
           sudo docker run -d \
-            --name fastapi-service \
+            --name fastapi-service-v2 \
             -p 8000:8000 \
-            pisa-fastapi-app
+            pisa-fastapi-app-v2
           
-          # Construir y ejecutar Next.js (sin caché)
+          # Verificar que el contenedor FastAPI esté corriendo
+          echo "FastAPI container status:"
+          sudo docker ps | grep fastapi-service-v2 || echo "FastAPI container not found!"
+          
+          # Esperar un momento y verificar logs
+          sleep 5
+          echo "FastAPI container logs:"
+          sudo docker logs fastapi-service-v2 | tail -10
+          
+          # Verificar la versión del API
+          echo "Testing FastAPI version:"
+          curl -s http://localhost:8000/docs | grep -o 'version.*[0-9]\+\.[0-9]\+\.[0-9]\+' || echo "Could not get version"
+          
+          # Construir y ejecutar Next.js (sin caché) - NUEVO NOMBRE
           echo "Building Next.js container from scratch..."
-          sudo docker build --no-cache -t pisa-job-app .
+          sudo docker build --no-cache -t pisa-job-app-v2 .
           sudo docker run -d \
-            --name pisa-app \
+            --name pisa-app-v2 \
             --env-file .env \
             -p 3000:3000 \
-            pisa-job-app
+            pisa-job-app-v2
+          
+          # Mostrar estado final
+          echo "Final container status:"
+          sudo docker ps
         EOF
