@@ -2,7 +2,6 @@
 
 # PISA Job Application System
 
-![Status](https://img.shields.io/badge/status-still_in_development-yellow)
 ![Next.js](https://img.shields.io/badge/Next.js-13+-black)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5+-blue)
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.100+-green)
